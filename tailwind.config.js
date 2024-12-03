@@ -1,6 +1,6 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
-  darkMode: "class",
+  // darkMode: "selector",
   content: ["./App.{js,ts,jsx,tsx}", "./Screens/**/*.{js,jsx,ts,tsx}"],
   presets: [require("nativewind/preset")],
   theme: {
@@ -12,8 +12,8 @@ module.exports = {
         "greenBlue-400": "#0E6973",
         "greenBlue-500": "#0A3A40",
         purpleBlue: "#030A8C",
-        "dark-500": "2B2B2B",
-        "dark-200": "5C5C5C",
+        "dark-500": "#2B2B2B",
+        "dark-200": "#5C5C5C",
       },
     },
   },
