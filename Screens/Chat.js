@@ -133,10 +133,12 @@ export default function Chat(props) {
       style={{ flex: 1 }}
     >
       <View className="h-full w-full flex-col">
-        <StatusBar barStyle="dark-content" />
+        {Platform.OS !== "ios" && <StatusBar barStyle="dark-content" />}
+        {/* Header */}
         <View
-          className="mt-10 flex h-16 w-full flex-row items-center justify-start px-2"
+          className="flex h-16 w-full flex-row items-center justify-start px-2"
           style={{
+            marginTop: Platform.OS === "ios" ? 20 : 30,
             backgroundColor: theme.sides_background_color,
           }}
         >
@@ -145,6 +147,7 @@ export default function Chat(props) {
             size={24}
             className="mr-2"
             color={theme.icons_color}
+            onPress={() => props.navigation.goBack()}
           />
           <Image
             className="h-12 w-12 rounded-full"
@@ -266,6 +269,7 @@ export default function Chat(props) {
                 />
               </View>
             )}
+            {/* Input section */}
             <TouchableWithoutFeedback onPress={dismissKeyboard}>
               <Animated.View
                 className="mx-3 h-12 flex-1 rounded-full bg-white"
