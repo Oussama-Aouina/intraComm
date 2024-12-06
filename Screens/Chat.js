@@ -28,20 +28,11 @@ export default function Chat(props) {
   //retreive the users ids
   const currentId = props.route.params.currentId;
   const secondId = props.route.params.secondId;
-
-  const theme = {
-    sides_background_color: "#0A3A40",
-    icons_color: "#05F2DB",
-    background_image: "dark_green_bg.jpg",
-    sender_message_text_color: "#DCF8C6",
-    sender_message_background_color: "#DCF8C6",
-    receiver_message_text_color: "#000",
-    receiver_message_background_color: "#FFF",
-    emoji: "👍",
-  };
+  // animation du champ text
   const [inputFocus, setInputFocus] = useState(false);
   const animatedWidth = useRef(new Animated.Value(40)).current; // Start width at 40%
   const flatListRef = useRef();
+  //input animation
   useEffect(() => {
     // Animate width when inputFocus changes
     Animated.timing(animatedWidth, {
@@ -56,7 +47,7 @@ export default function Chat(props) {
   const ref_second_profile = ref_profiles.child("unprofil" + secondId);
   // i want to retreive the data of the second user
   const [secondProfile, setSecondProfile] = useState({});
-
+  // recuperation de deuxieme profile
   useEffect(() => {
     ref_second_profile.on("value", (snapshot) => {
       setSecondProfile(snapshot.val());
@@ -70,16 +61,23 @@ export default function Chat(props) {
   }, []);
 
   const [data, setData] = useState([]);
-  // les params de discussion
+  // reference sur tout les discussions
   const ref_discussions = database.ref("Discussions");
+  // id de la discussion
   const id = currentId > secondId ? currentId + secondId : secondId + currentId;
+  //reference de la discussion courante
   const ref_une_discussion = ref_discussions.child(id);
+  // recuperation de theme á partir de la discussion
 
   useEffect(() => {
     ref_une_discussion.on("value", (snapshot) => {
       let d = [];
       snapshot.forEach((msg) => {
-        if (msg.val().id != currentId) {
+        //recuperation du theme de discussion
+        if (msg.key === "theme") {
+          // If the key is 'theme', retrieve its value
+          setDiscussionTheme(msg.val());
+        } else if (msg.val().id != currentId) {
           d.push(msg.val());
         }
       });
@@ -91,11 +89,38 @@ export default function Chat(props) {
     };
   }, []);
 
+  // le nom initiale du theme de discussion
+  const [discussionTheme, setDiscussionTheme] = useState("pinkpanther");
+  //theme initale
+  const [theme, setTheme] = useState({
+    sides_background_color: "#0A3A40",
+    icons_color: "#05F2DB",
+    background_image: "dark_green_bg.jpg",
+    sender_message_text_color: "#DCF8C6",
+    sender_message_background_color: "#DCF8C6",
+    receiver_message_text_color: "#000",
+    receiver_message_background_color: "#FFF",
+    emoji: "👍",
+  });
+  // recupration des informations du theme
+  useEffect(() => {
+    ref_theme = database.ref("DiscussionsThemes").child(discussionTheme);
+    ref_theme.on("value", (snapshot) => {
+      let themeselected = snapshot.val();
+      console.log("Theme Selected:", themeselected);
+      setTheme(snapshot.val());
+    });
+
+    return () => {
+      ref_theme.off();
+    };
+  }, [discussionTheme]);
+
   //les champs changeable
 
   const [msg, setMsg] = useState("");
   //la fonction pour envoyer un message
-  const sendMessage = () => {
+  const sendMessage = (msg, typeMsg) => {
     if (!msg) return;
     const base_ref = database.ref();
     const ref_discussions = base_ref.child("Discussions");
@@ -113,6 +138,7 @@ export default function Chat(props) {
       time: new Date().toLocaleString(),
       sender: currentId,
       receiver: secondId,
+      type: typeMsg !== undefined ? typeMsg : "text",
     };
     console.log("Message Data:", messageData);
 
@@ -121,6 +147,7 @@ export default function Chat(props) {
     });
     setMsg("");
   };
+
   const dismissKeyboard = () => {
     Keyboard.dismiss();
     setInputFocus(false);
@@ -133,7 +160,7 @@ export default function Chat(props) {
       style={{ flex: 1 }}
     >
       <View className="h-full w-full flex-col">
-        {Platform.OS !== "ios" && <StatusBar barStyle="dark-content" />}
+        <StatusBar barStyle={"dark-content"} />
         {/* Header */}
         <View
           className="flex h-16 w-full flex-row items-center justify-start px-2"
@@ -155,7 +182,12 @@ export default function Chat(props) {
               uri: secondProfile.linkImage,
             }}
           />
-          <Text className="ml-2 text-xl font-bold text-white">
+          <Text
+            className="ml-2 text-xl font-bold"
+            style={{
+              color: theme.user_name_color ? theme.user_name_color : "#FFF",
+            }}
+          >
             {secondProfile.nom} {secondProfile.pseudo}
           </Text>
           <FontAwesome
@@ -171,14 +203,15 @@ export default function Chat(props) {
             className="mx-6"
           />
         </View>
-        {/* Messages */}
+
         <ImageBackground
-          source={require("../assets/images/dark_green_bg.jpg")}
+          source={{ uri: theme.background_image }}
           // style={styles.container}
           className="w-full flex-1"
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Messages */}
           <FlatList
             ref={flatListRef}
             data={data}
@@ -192,36 +225,68 @@ export default function Chat(props) {
               const isCurrentUser = item.item.sender === currentId;
               return (
                 <View
-                  className="my-3 w-full flex-row"
+                  className="my-3 mb-2 w-full flex-row"
                   style={{
                     justifyContent: isCurrentUser ? "flex-end" : "flex-start",
                   }}
                 >
-                  <View
-                    className="mx-2 max-w-[70%] rounded-xl p-2"
-                    style={{
-                      backgroundColor: isCurrentUser
-                        ? theme.sender_message_background_color
-                        : theme.receiver_message_background_color,
-                    }}
-                  >
-                    <Text
-                      className="text-xl"
-                      style={{ color: isCurrentUser ? "#000" : "#555" }}
-                    >
-                      {item.item.message}
-                    </Text>
-                    <Text
+                  {/* Emoji Message */}
+                  {item.item.type === "emoji" ? (
+                    <View className="mx-2 max-w-[70%] rounded-xl p-2">
+                      <Text
+                        className="text-3xl"
+                        style={{
+                          color: isCurrentUser ? "#000" : "#555",
+                          textAlign: isCurrentUser ? "right" : "left",
+                        }}
+                      >
+                        {item.item.message}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          color: "#999",
+                          textAlign: isCurrentUser ? "right" : "left",
+                          marginTop: 5,
+                        }}
+                      >
+                        {item.item.time}
+                      </Text>
+                    </View>
+                  ) : (
+                    // Text Message
+                    <View
+                      className="mx-2 max-w-[70%] rounded-2xl p-2"
                       style={{
-                        fontSize: 10,
-                        color: "#999",
-                        textAlign: isCurrentUser ? "right" : "left",
-                        marginTop: 5,
+                        backgroundColor: isCurrentUser
+                          ? theme.sender_message_background_color
+                          : theme.receiver_message_background_color,
+                        borderBottomRightRadius: isCurrentUser ? 0 : 15,
+                        borderBottomLeftRadius: isCurrentUser ? 15 : 0,
                       }}
                     >
-                      {item.item.time}
-                    </Text>
-                  </View>
+                      <Text
+                        className="text-xl"
+                        style={{
+                          color: isCurrentUser
+                            ? theme.sender_message_text_color
+                            : theme.receiver_message_text_color,
+                        }}
+                      >
+                        {item.item.message}
+                      </Text>
+                      <Text
+                        style={{
+                          fontSize: 10,
+                          color: "#999",
+                          textAlign: isCurrentUser ? "right" : "left",
+                          marginTop: 5,
+                        }}
+                      >
+                        {item.item.time}
+                      </Text>
+                    </View>
+                  )}
                 </View>
               );
             }}
@@ -296,15 +361,26 @@ export default function Chat(props) {
                 />
               </Animated.View>
             </TouchableWithoutFeedback>
-            <Ionicons
-              name="send"
-              className=""
-              size={26}
-              color={theme.icons_color}
-              onPress={() => {
-                sendMessage();
-              }}
-            />
+            {msg.length > 0 ? (
+              <Ionicons
+                name="send"
+                className=""
+                size={26}
+                color={theme.icons_color}
+                onPress={() => {
+                  sendMessage(msg);
+                }}
+              />
+            ) : (
+              <Text
+                className="text-3xl"
+                onPress={() => {
+                  sendMessage(theme.emoji, "emoji");
+                }}
+              >
+                {theme.emoji}
+              </Text>
+            )}
           </View>
         </ImageBackground>
       </View>
