@@ -160,49 +160,9 @@ export default function Chat(props) {
       style={{ flex: 1 }}
     >
       <View className="h-full w-full flex-col">
-        <StatusBar barStyle={"dark-content"} />
-        {/* Header */}
-        <View
-          className="flex h-16 w-full flex-row items-center justify-start px-2"
-          style={{
-            marginTop: Platform.OS === "ios" ? 20 : 30,
-            backgroundColor: theme.sides_background_color,
-          }}
-        >
-          <AntDesign
-            name="left"
-            size={24}
-            className="mr-2"
-            color={theme.icons_color}
-            onPress={() => props.navigation.goBack()}
-          />
-          <Image
-            className="h-12 w-12 rounded-full"
-            source={{
-              uri: secondProfile.linkImage,
-            }}
-          />
-          <Text
-            className="ml-2 text-xl font-bold"
-            style={{
-              color: theme.user_name_color ? theme.user_name_color : "#FFF",
-            }}
-          >
-            {secondProfile.nom} {secondProfile.pseudo}
-          </Text>
-          <FontAwesome
-            name="phone"
-            size={28}
-            color={theme.icons_color}
-            className="ml-auto"
-          />
-          <Ionicons
-            name="videocam"
-            size={28}
-            color={theme.icons_color}
-            className="mx-6"
-          />
-        </View>
+        <StatusBar
+          barStyle={theme.barStyle ? "light-content" : "dark-content"}
+        />
 
         <ImageBackground
           source={{ uri: theme.background_image }}
@@ -211,6 +171,48 @@ export default function Chat(props) {
           style={{ flex: 1 }}
           keyboardShouldPersistTaps="handled"
         >
+          {/* Header */}
+          <View
+            className="flex h-16 w-full flex-row items-center justify-start px-2"
+            style={{
+              marginTop: Platform.OS === "ios" ? 20 : 30,
+              backgroundColor: theme.sides_background_color,
+            }}
+          >
+            <AntDesign
+              name="left"
+              size={24}
+              className="mr-2"
+              color={theme.icons_color}
+              onPress={() => props.navigation.goBack()}
+            />
+            <Image
+              className="h-12 w-12 rounded-full"
+              source={{
+                uri: secondProfile.linkImage,
+              }}
+            />
+            <Text
+              className="ml-2 text-xl font-bold"
+              style={{
+                color: theme.user_name_color ? theme.user_name_color : "#FFF",
+              }}
+            >
+              {secondProfile.nom} {secondProfile.pseudo}
+            </Text>
+            <FontAwesome
+              name="phone"
+              size={28}
+              color={theme.icons_color}
+              className="ml-auto"
+            />
+            <Ionicons
+              name="videocam"
+              size={28}
+              color={theme.icons_color}
+              className="mx-6"
+            />
+          </View>
           {/* Messages */}
           <FlatList
             ref={flatListRef}
@@ -348,7 +350,7 @@ export default function Chat(props) {
                 ]}
               >
                 <TextInput
-                  className="h-full w-full pl-3 text-xl"
+                  className="h-full w-full px-3 text-xl"
                   placeholder="Aa"
                   onFocus={() => setInputFocus(true)}
                   onBlur={() => setInputFocus(false)}
