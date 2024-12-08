@@ -1,5 +1,9 @@
 import React from "react";
 import firebase from "../config";
+import * as ImagePicker from "expo-image-picker";
+import * as FileSystem from "expo-file-system";
+import { decode } from "base64-arraybuffer";
+import { supabase } from "../config";
 import { useEffect, useState, useRef } from "react";
 import {
   View,
@@ -16,11 +20,13 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from "react-native";
+
 import { set } from "firebase/database";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
+import { Message } from "../Components";
 
 const database = firebase.database();
 
@@ -60,6 +66,7 @@ export default function Chat(props) {
     };
   }, []);
 
+  // reglage des messages
   const [data, setData] = useState([]);
   // reference sur tout les discussions
   const ref_discussions = database.ref("Discussions");
@@ -79,6 +86,7 @@ export default function Chat(props) {
           setDiscussionTheme(msg.val());
         } else if (msg.val().id != currentId) {
           d.push(msg.val());
+          console.log("Message Data:", msg.val());
         }
       });
       setData(d);
@@ -106,8 +114,6 @@ export default function Chat(props) {
   useEffect(() => {
     ref_theme = database.ref("DiscussionsThemes").child(discussionTheme);
     ref_theme.on("value", (snapshot) => {
-      let themeselected = snapshot.val();
-      console.log("Theme Selected:", themeselected);
       setTheme(snapshot.val());
     });
 
@@ -116,8 +122,7 @@ export default function Chat(props) {
     };
   }, [discussionTheme]);
 
-  //les champs changeable
-
+  // reglage des messages
   const [msg, setMsg] = useState("");
   //la fonction pour envoyer un message
   const sendMessage = (msg, typeMsg) => {
@@ -147,12 +152,345 @@ export default function Chat(props) {
     });
     setMsg("");
   };
-
+  // pour le bon display de clavier sur ios
   const dismissKeyboard = () => {
     Keyboard.dismiss();
     setInputFocus(false);
   };
 
+  // reglage de l'evoie des documents
+
+  const uploadImage = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert("Permission to access camera roll is required!");
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      cameraType: ImagePicker.CameraType.front,
+      quality: 1,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+    });
+
+    if (pickerResult.cancelled === true) {
+      return;
+    }
+    const uriImage = pickerResult.assets[0].uri;
+
+    const response = await fetch(uriImage);
+    if (!response.ok) {
+      throw new Error(`Failed to fetch: ${response.statusText}`);
+    }
+    // const blob = await response.blob();
+    const base64 = await FileSystem.readAsStringAsync(uriImage, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    console.log("image type", uriImage.type);
+    const contentType =
+      pickerResult.assets[0].type === "image" ? "image/png" : "image/jpeg";
+
+    await supabase.storage
+      .from("discussionsFiles")
+      .upload("image" + currentId, decode(base64), {
+        contentType,
+      });
+
+    const { data } = supabase.storage
+      .from("discussionsFiles")
+      .getPublicUrl("image" + currentId);
+    console.log("showdata" + data);
+
+    return data.publicUrl;
+  };
+
+  const uploadFile = async () => {
+    const permissionResult =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert("Permission to access camera roll is required!");
+      return;
+    }
+    const pickerResult = await ImagePicker.launchDocumentLibraryAsync();
+    if (pickerResult.cancelled === true) {
+      return;
+    }
+    const response = await fetch(pickerResult.uri);
+    const blob = await response.blob();
+    const ref = firebase
+      .storage()
+      .ref()
+      .child("files/" + currentId);
+    ref.put(blob).then((snapshot) => {
+      console.log("Uploaded a blob or file!", snapshot);
+    });
+    return ref.getDownloadURL();
+  };
+
+  // const takePhoto = async () => {
+  //   const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+  //   if (permissionResult.granted === false) {
+  //     alert("Permission to access camera roll is required!");
+  //     return;
+  //   }
+
+  //   const pickerResult = await ImagePicker.launchCameraAsync({
+  //     allowsEditing: true,
+  //     aspect: [4, 3],
+  //     cameraType: ImagePicker.CameraType.front,
+  //     quality: 1,
+  //     mediaTypes: ImagePicker.MediaTypeOptions.All,
+  //   });
+
+  //   if (pickerResult.cancelled === true) {
+  //     return;
+  //   }
+
+  //   try {
+  //     // Log the URI to ensure it's valid
+  //     console.log("File URI:", pickerResult.assets[0].uri);
+
+  //     // Fetch the file as a Blob
+  //     const response = await fetch(pickerResult.assets[0].uri);
+  //     if (!response.ok) {
+  //       throw new Error(`Failed to fetch the file: ${response.statusText}`);
+  //     }
+
+  //     const blob = await response.blob();
+  //     console.log("Fetched file as Blob:", blob);
+
+  //     // Determine the file name and MIME type
+  //     const fileName =
+  //       pickerResult.assets[0].fileName || `file_${Date.now()}.jpeg`; // Ensure a valid extension
+  //     const mimeType = blob.type || "application/octet-stream"; // Default MIME type
+
+  //     console.log("Uploading file:", { fileName, mimeType });
+
+  //     // Upload the file to Supabase storage
+  //     const { data, error } = await supabase.storage
+  //       .from("discussionsFiles") // Adjust bucket name as needed
+  //       .upload(fileName, blob, {
+  //         contentType: mimeType, // Dynamically set content type
+  //         upsert: true, // Update the file if it already exists
+  //       });
+
+  //     if (error) {
+  //       throw new Error(`Supabase upload error: ${error.message}`);
+  //     }
+
+  //     // Get the public URL of the uploaded file
+  //     const { data: publicUrlData } = supabase.storage
+  //       .from("discussionsFiles")
+  //       .getPublicUrl(fileName);
+
+  //     if (!publicUrlData) {
+  //       throw new Error("Failed to retrieve the public URL.");
+  //     }
+
+  //     console.log(
+  //       "File uploaded successfully. Public URL:",
+  //       publicUrlData.publicUrl,
+  //     );
+  //     return publicUrlData.publicUrl;
+  //   } catch (error) {
+  //     console.error("Error uploading the file:", error);
+  //     alert("Something went wrong while uploading the file.");
+  //     return null;
+  //   }
+  // };
+
+  // take a phot or a video
+  const takePhoto = async () => {
+    const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
+    if (permissionResult.granted === false) {
+      alert("Permission to access camera roll is required!");
+      return;
+    }
+
+    const pickerResult = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      cameraType: ImagePicker.CameraType.front,
+      quality: 0.3,
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
+    });
+
+    if (pickerResult.cancelled === true) {
+      return;
+    }
+
+    // the uri of the photo or the video
+    const uriImage = pickerResult.assets[0].uri;
+    // the id of the new image/video to upload
+    const docId = currentId + Date.now();
+    try {
+      // Read the image as a Base64 string
+      const base64 = await FileSystem.readAsStringAsync(uriImage, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+      console.log("file type: " + pickerResult.assets[0].type);
+      const mediaType = pickerResult.assets[0].type;
+      // Determine the content type
+      const contentType =
+        pickerResult.assets[0].type === "image" ? "image/png" : "video/mp4"; // Default to JPEG if type is not available
+      console.log("Content Type:", contentType);
+      // Upload the image to Supabase storage
+      const { data, error } = await supabase.storage
+        .from("discussionsFiles")
+        .upload(docId, decode(base64), {
+          contentType: contentType,
+          upsert: true, // Update the file if it already exists
+        });
+
+      if (error) {
+        throw new Error(`Supabase upload error: ${error.message}`);
+      }
+
+      // Get the public URL of the uploaded file
+      const { data: publicUrlData } = supabase.storage
+        .from("discussionsFiles")
+        .getPublicUrl(docId);
+
+      if (!publicUrlData) {
+        throw new Error("Failed to retrieve the public URL.");
+      }
+
+      console.log(
+        "File uploaded successfully. Public URL:",
+        publicUrlData.publicUrl,
+      );
+      return [publicUrlData.publicUrl, mediaType];
+    } catch (error) {
+      console.error("Error uploading the file:", error);
+      alert("Something went wrong while uploading the file.");
+      return null;
+    }
+  };
+  const [photo, setPhoto] = useState(null);
+  const hadleTakePhoto = async () => {
+    const [photo, type] = await takePhoto();
+    setPhoto(photo);
+    console.log("media document", photo);
+    sendMessage(photo, type);
+  };
+
+  // const Message = React.memo(({ item, isCurrentUser, theme }) => {
+  //   switch (item.item.type) {
+  //     case "emoji":
+  //       return (
+  //         <View
+  //           className="my-3 mb-2 w-full flex-row"
+  //           style={{
+  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
+  //           }}
+  //         >
+  //           <View className="mx-2 max-w-[70%] rounded-xl p-2">
+  //             <Text
+  //               className="text-3xl"
+  //               style={{
+  //                 color: isCurrentUser ? "#000" : "#555",
+  //                 textAlign: isCurrentUser ? "right" : "left",
+  //               }}
+  //             >
+  //               {item.item.message}
+  //             </Text>
+  //             <Text
+  //               style={{
+  //                 fontSize: 10,
+  //                 color: "#999",
+  //                 textAlign: isCurrentUser ? "right" : "left",
+  //                 marginTop: 5,
+  //               }}
+  //             >
+  //               {item.item.time}
+  //             </Text>
+  //           </View>
+  //         </View>
+  //       );
+  //     case "text":
+  //       return (
+  //         <View
+  //           className="my-3 mb-2 w-full flex-row"
+  //           style={{
+  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
+  //           }}
+  //         >
+  //           <View
+  //             className="mx-2 max-w-[70%] rounded-2xl p-2"
+  //             style={{
+  //               backgroundColor: isCurrentUser
+  //                 ? theme.sender_message_background_color
+  //                 : theme.receiver_message_background_color,
+  //               borderBottomRightRadius: isCurrentUser ? 0 : 15,
+  //               borderBottomLeftRadius: isCurrentUser ? 15 : 0,
+  //             }}
+  //           >
+  //             <Text
+  //               className="text-xl"
+  //               style={{
+  //                 color: isCurrentUser
+  //                   ? theme.sender_message_text_color
+  //                   : theme.receiver_message_text_color,
+  //               }}
+  //             >
+  //               {item.item.message}
+  //             </Text>
+  //             <Text
+  //               style={{
+  //                 fontSize: 10,
+  //                 color: "#999",
+  //                 textAlign: isCurrentUser ? "right" : "left",
+  //                 marginTop: 5,
+  //               }}
+  //             >
+  //               {item.item.time}
+  //             </Text>
+  //           </View>
+  //         </View>
+  //       );
+  //     case "image":
+  //       return (
+  //         <View
+  //           className="my-3 mb-2 w-full flex-row"
+  //           style={{
+  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
+  //           }}
+  //         >
+  //           <View className="mx-2 max-w-[70%] rounded-xl p-2">
+  //             <Image
+  //               source={{ uri: item.item.message }}
+  //               style={{ width: 200, height: 200 }}
+  //             />
+  //             <Text
+  //               style={{
+  //                 fontSize: 10,
+  //                 color: "#999",
+  //                 textAlign: isCurrentUser ? "right" : "left",
+  //                 marginTop: 5,
+  //               }}
+  //             >
+  //               {item.item.time}
+  //             </Text>
+  //           </View>
+  //         </View>
+  //       );
+  //     case "video":
+  //       return (
+  //         <View
+  //           className="my-3 mb-2 w-full flex-row"
+  //           style={{
+  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
+  //           }}
+  //         >
+  //           <VideoMessage />
+  //         </View>
+  //       );
+  //     default:
+  //       return null; // or some fallback UI
+  //   }
+  // });
   return (
     //sectionList tnajem tafichilek 7asb parametre enti 3inek bih (exemple : par jour)
     <KeyboardAvoidingView
@@ -219,6 +557,7 @@ export default function Chat(props) {
             data={data}
             scrollEnabled={true} // Explicitly enable scrolling
             nestedScrollEnabled={true}
+            keyExtractor={(item, index) => item.id || index.toString()}
             keyboardShouldPersistTaps="handled"
             onContentSizeChange={() =>
               flatListRef.current?.scrollToEnd({ animated: true })
@@ -226,71 +565,135 @@ export default function Chat(props) {
             renderItem={(item) => {
               const isCurrentUser = item.item.sender === currentId;
               return (
-                <View
-                  className="my-3 mb-2 w-full flex-row"
-                  style={{
-                    justifyContent: isCurrentUser ? "flex-end" : "flex-start",
-                  }}
-                >
-                  {/* Emoji Message */}
-                  {item.item.type === "emoji" ? (
-                    <View className="mx-2 max-w-[70%] rounded-xl p-2">
-                      <Text
-                        className="text-3xl"
-                        style={{
-                          color: isCurrentUser ? "#000" : "#555",
-                          textAlign: isCurrentUser ? "right" : "left",
-                        }}
-                      >
-                        {item.item.message}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          color: "#999",
-                          textAlign: isCurrentUser ? "right" : "left",
-                          marginTop: 5,
-                        }}
-                      >
-                        {item.item.time}
-                      </Text>
-                    </View>
-                  ) : (
-                    // Text Message
-                    <View
-                      className="mx-2 max-w-[70%] rounded-2xl p-2"
-                      style={{
-                        backgroundColor: isCurrentUser
-                          ? theme.sender_message_background_color
-                          : theme.receiver_message_background_color,
-                        borderBottomRightRadius: isCurrentUser ? 0 : 15,
-                        borderBottomLeftRadius: isCurrentUser ? 15 : 0,
-                      }}
-                    >
-                      <Text
-                        className="text-xl"
-                        style={{
-                          color: isCurrentUser
-                            ? theme.sender_message_text_color
-                            : theme.receiver_message_text_color,
-                        }}
-                      >
-                        {item.item.message}
-                      </Text>
-                      <Text
-                        style={{
-                          fontSize: 10,
-                          color: "#999",
-                          textAlign: isCurrentUser ? "right" : "left",
-                          marginTop: 5,
-                        }}
-                      >
-                        {item.item.time}
-                      </Text>
-                    </View>
-                  )}
-                </View>
+                <Message
+                  item={item}
+                  isCurrentUser={isCurrentUser}
+                  theme={theme}
+                />
               );
+              // switch (item.item.type) {
+              //   case "emoji":
+              //     return (
+              //       <View
+              //         className="my-3 mb-2 w-full flex-row"
+              //         style={{
+              //           justifyContent: isCurrentUser
+              //             ? "flex-end"
+              //             : "flex-start",
+              //         }}
+              //       >
+              //         <View className="mx-2 max-w-[70%] rounded-xl p-2">
+              //           <Text
+              //             className="text-3xl"
+              //             style={{
+              //               color: isCurrentUser ? "#000" : "#555",
+              //               textAlign: isCurrentUser ? "right" : "left",
+              //             }}
+              //           >
+              //             {item.item.message}
+              //           </Text>
+              //           <Text
+              //             style={{
+              //               fontSize: 10,
+              //               color: "#999",
+              //               textAlign: isCurrentUser ? "right" : "left",
+              //               marginTop: 5,
+              //             }}
+              //           >
+              //             {item.item.time}
+              //           </Text>
+              //         </View>
+              //       </View>
+              //     );
+
+              //   case "text":
+              //     return (
+              //       <View
+              //         className="my-3 mb-2 w-full flex-row"
+              //         style={{
+              //           justifyContent: isCurrentUser
+              //             ? "flex-end"
+              //             : "flex-start",
+              //         }}
+              //       >
+              //         <View
+              //           className="mx-2 max-w-[70%] rounded-2xl p-2"
+              //           style={{
+              //             backgroundColor: isCurrentUser
+              //               ? theme.sender_message_background_color
+              //               : theme.receiver_message_background_color,
+              //             borderBottomRightRadius: isCurrentUser ? 0 : 15,
+              //             borderBottomLeftRadius: isCurrentUser ? 15 : 0,
+              //           }}
+              //         >
+              //           <Text
+              //             className="text-xl"
+              //             style={{
+              //               color: isCurrentUser
+              //                 ? theme.sender_message_text_color
+              //                 : theme.receiver_message_text_color,
+              //             }}
+              //           >
+              //             {item.item.message}
+              //           </Text>
+              //           <Text
+              //             style={{
+              //               fontSize: 10,
+              //               color: "#999",
+              //               textAlign: isCurrentUser ? "right" : "left",
+              //               marginTop: 5,
+              //             }}
+              //           >
+              //             {item.item.time}
+              //           </Text>
+              //         </View>
+              //       </View>
+              //     );
+
+              //   case "image":
+              //     return (
+              //       <View
+              //         className="my-3 mb-2 w-full flex-row"
+              //         style={{
+              //           justifyContent: isCurrentUser
+              //             ? "flex-end"
+              //             : "flex-start",
+              //         }}
+              //       >
+              //         <View className="mx-2 max-w-[70%] rounded-xl p-2">
+              //           <Image
+              //             source={{ uri: item.item.message }}
+              //             style={{ width: 200, height: 200 }}
+              //           />
+              //           <Text
+              //             style={{
+              //               fontSize: 10,
+              //               color: "#999",
+              //               textAlign: isCurrentUser ? "right" : "left",
+              //               marginTop: 5,
+              //             }}
+              //           >
+              //             {item.item.time}
+              //           </Text>
+              //         </View>
+              //       </View>
+              //     );
+              //   case "video":
+              //     return (
+              //       <View
+              //         className="my-3 mb-2 w-full flex-row"
+              //         style={{
+              //           justifyContent: isCurrentUser
+              //             ? "flex-end"
+              //             : "flex-start",
+              //         }}
+              //       >
+              //         <VideoMessage />
+              //       </View>
+              //     );
+              //   default:
+              //     return null; // or some fallback UI
+              // }
             }}
           />
 
@@ -326,6 +729,9 @@ export default function Chat(props) {
                   size={26}
                   color={theme.icons_color}
                   className="mx-3"
+                  onPress={() => {
+                    hadleTakePhoto();
+                  }}
                 />
 
                 <FontAwesome
