@@ -19,6 +19,7 @@ import {
   ScrollView,
   Keyboard,
   TouchableWithoutFeedback,
+  TouchableOpacity,
 } from "react-native";
 
 import { set } from "firebase/database";
@@ -26,7 +27,7 @@ import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Message } from "../Components";
+import { Message, AudioRecorder } from "../Components";
 
 const database = firebase.database();
 
@@ -86,7 +87,6 @@ export default function Chat(props) {
           setDiscussionTheme(msg.val());
         } else if (msg.val().id != currentId) {
           d.push(msg.val());
-          console.log("Message Data:", msg.val());
         }
       });
       setData(d);
@@ -98,7 +98,7 @@ export default function Chat(props) {
   }, []);
 
   // le nom initiale du theme de discussion
-  const [discussionTheme, setDiscussionTheme] = useState("pinkpanther");
+  const [discussionTheme, setDiscussionTheme] = useState("default");
   //theme initale
   const [theme, setTheme] = useState({
     sides_background_color: "#0A3A40",
@@ -229,79 +229,6 @@ export default function Chat(props) {
     return ref.getDownloadURL();
   };
 
-  // const takePhoto = async () => {
-  //   const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
-  //   if (permissionResult.granted === false) {
-  //     alert("Permission to access camera roll is required!");
-  //     return;
-  //   }
-
-  //   const pickerResult = await ImagePicker.launchCameraAsync({
-  //     allowsEditing: true,
-  //     aspect: [4, 3],
-  //     cameraType: ImagePicker.CameraType.front,
-  //     quality: 1,
-  //     mediaTypes: ImagePicker.MediaTypeOptions.All,
-  //   });
-
-  //   if (pickerResult.cancelled === true) {
-  //     return;
-  //   }
-
-  //   try {
-  //     // Log the URI to ensure it's valid
-  //     console.log("File URI:", pickerResult.assets[0].uri);
-
-  //     // Fetch the file as a Blob
-  //     const response = await fetch(pickerResult.assets[0].uri);
-  //     if (!response.ok) {
-  //       throw new Error(`Failed to fetch the file: ${response.statusText}`);
-  //     }
-
-  //     const blob = await response.blob();
-  //     console.log("Fetched file as Blob:", blob);
-
-  //     // Determine the file name and MIME type
-  //     const fileName =
-  //       pickerResult.assets[0].fileName || `file_${Date.now()}.jpeg`; // Ensure a valid extension
-  //     const mimeType = blob.type || "application/octet-stream"; // Default MIME type
-
-  //     console.log("Uploading file:", { fileName, mimeType });
-
-  //     // Upload the file to Supabase storage
-  //     const { data, error } = await supabase.storage
-  //       .from("discussionsFiles") // Adjust bucket name as needed
-  //       .upload(fileName, blob, {
-  //         contentType: mimeType, // Dynamically set content type
-  //         upsert: true, // Update the file if it already exists
-  //       });
-
-  //     if (error) {
-  //       throw new Error(`Supabase upload error: ${error.message}`);
-  //     }
-
-  //     // Get the public URL of the uploaded file
-  //     const { data: publicUrlData } = supabase.storage
-  //       .from("discussionsFiles")
-  //       .getPublicUrl(fileName);
-
-  //     if (!publicUrlData) {
-  //       throw new Error("Failed to retrieve the public URL.");
-  //     }
-
-  //     console.log(
-  //       "File uploaded successfully. Public URL:",
-  //       publicUrlData.publicUrl,
-  //     );
-  //     return publicUrlData.publicUrl;
-  //   } catch (error) {
-  //     console.error("Error uploading the file:", error);
-  //     alert("Something went wrong while uploading the file.");
-  //     return null;
-  //   }
-  // };
-
-  // take a phot or a video
   const takePhoto = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
     if (permissionResult.granted === false) {
@@ -372,125 +299,12 @@ export default function Chat(props) {
   const hadleTakePhoto = async () => {
     const [photo, type] = await takePhoto();
     setPhoto(photo);
-    console.log("media document", photo);
+
     sendMessage(photo, type);
   };
 
-  // const Message = React.memo(({ item, isCurrentUser, theme }) => {
-  //   switch (item.item.type) {
-  //     case "emoji":
-  //       return (
-  //         <View
-  //           className="my-3 mb-2 w-full flex-row"
-  //           style={{
-  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
-  //           }}
-  //         >
-  //           <View className="mx-2 max-w-[70%] rounded-xl p-2">
-  //             <Text
-  //               className="text-3xl"
-  //               style={{
-  //                 color: isCurrentUser ? "#000" : "#555",
-  //                 textAlign: isCurrentUser ? "right" : "left",
-  //               }}
-  //             >
-  //               {item.item.message}
-  //             </Text>
-  //             <Text
-  //               style={{
-  //                 fontSize: 10,
-  //                 color: "#999",
-  //                 textAlign: isCurrentUser ? "right" : "left",
-  //                 marginTop: 5,
-  //               }}
-  //             >
-  //               {item.item.time}
-  //             </Text>
-  //           </View>
-  //         </View>
-  //       );
-  //     case "text":
-  //       return (
-  //         <View
-  //           className="my-3 mb-2 w-full flex-row"
-  //           style={{
-  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
-  //           }}
-  //         >
-  //           <View
-  //             className="mx-2 max-w-[70%] rounded-2xl p-2"
-  //             style={{
-  //               backgroundColor: isCurrentUser
-  //                 ? theme.sender_message_background_color
-  //                 : theme.receiver_message_background_color,
-  //               borderBottomRightRadius: isCurrentUser ? 0 : 15,
-  //               borderBottomLeftRadius: isCurrentUser ? 15 : 0,
-  //             }}
-  //           >
-  //             <Text
-  //               className="text-xl"
-  //               style={{
-  //                 color: isCurrentUser
-  //                   ? theme.sender_message_text_color
-  //                   : theme.receiver_message_text_color,
-  //               }}
-  //             >
-  //               {item.item.message}
-  //             </Text>
-  //             <Text
-  //               style={{
-  //                 fontSize: 10,
-  //                 color: "#999",
-  //                 textAlign: isCurrentUser ? "right" : "left",
-  //                 marginTop: 5,
-  //               }}
-  //             >
-  //               {item.item.time}
-  //             </Text>
-  //           </View>
-  //         </View>
-  //       );
-  //     case "image":
-  //       return (
-  //         <View
-  //           className="my-3 mb-2 w-full flex-row"
-  //           style={{
-  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
-  //           }}
-  //         >
-  //           <View className="mx-2 max-w-[70%] rounded-xl p-2">
-  //             <Image
-  //               source={{ uri: item.item.message }}
-  //               style={{ width: 200, height: 200 }}
-  //             />
-  //             <Text
-  //               style={{
-  //                 fontSize: 10,
-  //                 color: "#999",
-  //                 textAlign: isCurrentUser ? "right" : "left",
-  //                 marginTop: 5,
-  //               }}
-  //             >
-  //               {item.item.time}
-  //             </Text>
-  //           </View>
-  //         </View>
-  //       );
-  //     case "video":
-  //       return (
-  //         <View
-  //           className="my-3 mb-2 w-full flex-row"
-  //           style={{
-  //             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
-  //           }}
-  //         >
-  //           <VideoMessage />
-  //         </View>
-  //       );
-  //     default:
-  //       return null; // or some fallback UI
-  //   }
-  // });
+  const [recorderVisible, setRecorderVisible] = useState(false);
+
   return (
     //sectionList tnajem tafichilek 7asb parametre enti 3inek bih (exemple : par jour)
     <KeyboardAvoidingView
@@ -517,13 +331,14 @@ export default function Chat(props) {
               backgroundColor: theme.sides_background_color,
             }}
           >
-            <AntDesign
-              name="left"
-              size={24}
-              className="mr-2"
-              color={theme.icons_color}
-              onPress={() => props.navigation.goBack()}
-            />
+            <TouchableOpacity onPress={() => props.navigation.goBack()}>
+              <AntDesign
+                name="left"
+                size={24}
+                className="mr-2"
+                color={theme.icons_color}
+              />
+            </TouchableOpacity>
             <Image
               className="h-12 w-12 rounded-full"
               source={{
@@ -538,18 +353,17 @@ export default function Chat(props) {
             >
               {secondProfile.nom} {secondProfile.pseudo}
             </Text>
-            <FontAwesome
-              name="phone"
-              size={28}
-              color={theme.icons_color}
-              className="ml-auto"
-            />
-            <Ionicons
-              name="videocam"
-              size={28}
-              color={theme.icons_color}
-              className="mx-6"
-            />
+            <TouchableOpacity className="ml-auto">
+              <FontAwesome name="phone" size={28} color={theme.icons_color} />
+            </TouchableOpacity>
+            <TouchableOpacity>
+              <Ionicons
+                name="videocam"
+                size={28}
+                color={theme.icons_color}
+                className="mx-6"
+              />
+            </TouchableOpacity>
           </View>
           {/* Messages */}
           <FlatList
@@ -571,225 +385,122 @@ export default function Chat(props) {
                   theme={theme}
                 />
               );
-              // switch (item.item.type) {
-              //   case "emoji":
-              //     return (
-              //       <View
-              //         className="my-3 mb-2 w-full flex-row"
-              //         style={{
-              //           justifyContent: isCurrentUser
-              //             ? "flex-end"
-              //             : "flex-start",
-              //         }}
-              //       >
-              //         <View className="mx-2 max-w-[70%] rounded-xl p-2">
-              //           <Text
-              //             className="text-3xl"
-              //             style={{
-              //               color: isCurrentUser ? "#000" : "#555",
-              //               textAlign: isCurrentUser ? "right" : "left",
-              //             }}
-              //           >
-              //             {item.item.message}
-              //           </Text>
-              //           <Text
-              //             style={{
-              //               fontSize: 10,
-              //               color: "#999",
-              //               textAlign: isCurrentUser ? "right" : "left",
-              //               marginTop: 5,
-              //             }}
-              //           >
-              //             {item.item.time}
-              //           </Text>
-              //         </View>
-              //       </View>
-              //     );
-
-              //   case "text":
-              //     return (
-              //       <View
-              //         className="my-3 mb-2 w-full flex-row"
-              //         style={{
-              //           justifyContent: isCurrentUser
-              //             ? "flex-end"
-              //             : "flex-start",
-              //         }}
-              //       >
-              //         <View
-              //           className="mx-2 max-w-[70%] rounded-2xl p-2"
-              //           style={{
-              //             backgroundColor: isCurrentUser
-              //               ? theme.sender_message_background_color
-              //               : theme.receiver_message_background_color,
-              //             borderBottomRightRadius: isCurrentUser ? 0 : 15,
-              //             borderBottomLeftRadius: isCurrentUser ? 15 : 0,
-              //           }}
-              //         >
-              //           <Text
-              //             className="text-xl"
-              //             style={{
-              //               color: isCurrentUser
-              //                 ? theme.sender_message_text_color
-              //                 : theme.receiver_message_text_color,
-              //             }}
-              //           >
-              //             {item.item.message}
-              //           </Text>
-              //           <Text
-              //             style={{
-              //               fontSize: 10,
-              //               color: "#999",
-              //               textAlign: isCurrentUser ? "right" : "left",
-              //               marginTop: 5,
-              //             }}
-              //           >
-              //             {item.item.time}
-              //           </Text>
-              //         </View>
-              //       </View>
-              //     );
-
-              //   case "image":
-              //     return (
-              //       <View
-              //         className="my-3 mb-2 w-full flex-row"
-              //         style={{
-              //           justifyContent: isCurrentUser
-              //             ? "flex-end"
-              //             : "flex-start",
-              //         }}
-              //       >
-              //         <View className="mx-2 max-w-[70%] rounded-xl p-2">
-              //           <Image
-              //             source={{ uri: item.item.message }}
-              //             style={{ width: 200, height: 200 }}
-              //           />
-              //           <Text
-              //             style={{
-              //               fontSize: 10,
-              //               color: "#999",
-              //               textAlign: isCurrentUser ? "right" : "left",
-              //               marginTop: 5,
-              //             }}
-              //           >
-              //             {item.item.time}
-              //           </Text>
-              //         </View>
-              //       </View>
-              //     );
-              //   case "video":
-              //     return (
-              //       <View
-              //         className="my-3 mb-2 w-full flex-row"
-              //         style={{
-              //           justifyContent: isCurrentUser
-              //             ? "flex-end"
-              //             : "flex-start",
-              //         }}
-              //       >
-              //         <VideoMessage />
-              //       </View>
-              //     );
-              //   default:
-              //     return null; // or some fallback UI
-              // }
             }}
           />
+          {/* Files inputs */}
 
-          <View
-            // style={{ flexDirection: "row", width: "100%", borderColor: "#ff00" }}
-            className="w-full flex-row items-center justify-between px-4 py-2"
-            style={{
-              backgroundColor: theme.sides_background_color,
-            }}
-          >
-            {inputFocus ? (
-              <AntDesign
-                name="right"
-                size={26}
-                color={theme.icons_color}
-                onPress={() => setInputFocus(false)}
-              />
-            ) : (
-              <View
-                className="flex flex-row"
-                style={{
-                  width: inputFocus ? "0%" : "auto",
-                }}
-              >
-                <MaterialIcons
-                  name="add-circle"
-                  size={30}
-                  color={theme.icons_color}
-                  className="mr-3"
-                />
-                <FontAwesome
-                  name="camera"
+          {recorderVisible ? (
+            <AudioRecorder
+              visible={recorderVisible}
+              setRecordVisible={setRecorderVisible}
+              sendMessage={sendMessage}
+              theme={theme}
+            />
+          ) : (
+            <View
+              // style={{ flexDirection: "row", width: "100%", borderColor: "#ff00" }}
+              className="w-full flex-row items-center justify-between px-4 py-2"
+              style={{
+                backgroundColor: theme.sides_background_color,
+              }}
+            >
+              {inputFocus ? (
+                <TouchableOpacity onPress={() => setInputFocus(false)}>
+                  <AntDesign name="right" size={26} color={theme.icons_color} />
+                </TouchableOpacity>
+              ) : (
+                <View
+                  className="flex flex-row"
+                  style={{
+                    width: inputFocus ? "0%" : "auto",
+                  }}
+                >
+                  <TouchableOpacity>
+                    <MaterialIcons
+                      name="add-circle"
+                      size={30}
+                      color={theme.icons_color}
+                      className="mr-3"
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      hadleTakePhoto();
+                    }}
+                  >
+                    <FontAwesome
+                      name="camera"
+                      size={26}
+                      color={theme.icons_color}
+                      className="mx-3"
+                      onPress={() => {
+                        hadleTakePhoto();
+                      }}
+                    />
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    onPress={() => {
+                      setRecorderVisible(true);
+                    }}
+                  >
+                    <FontAwesome
+                      name="microphone"
+                      size={28}
+                      color={theme.icons_color}
+                      className="mx-3"
+                    />
+                  </TouchableOpacity>
+                </View>
+              )}
+              {/* Input section */}
+              <TouchableWithoutFeedback onPress={dismissKeyboard}>
+                <Animated.View
+                  className="mx-3 h-12 flex-1 rounded-full bg-white"
+                  style={[
+                    {
+                      width: animatedWidth.interpolate({
+                        inputRange: [0, 100],
+                        outputRange: ["0%", "100%"], // Convert animated value to percentage
+                      }),
+                    },
+                  ]}
+                >
+                  <TextInput
+                    className="h-full w-full px-3 text-xl"
+                    placeholder="Aa"
+                    onFocus={() => setInputFocus(true)}
+                    onBlur={() => setInputFocus(false)}
+                    onChangeText={(text) => {
+                      setMsg(text);
+                      setInputFocus(true);
+                    }}
+                    onPress={() => setInputFocus(true)}
+                    value={msg.length > 0 ? msg : ""}
+                  />
+                </Animated.View>
+              </TouchableWithoutFeedback>
+              {msg.length > 0 ? (
+                <Ionicons
+                  name="send"
+                  className=""
                   size={26}
                   color={theme.icons_color}
-                  className="mx-3"
                   onPress={() => {
-                    hadleTakePhoto();
+                    sendMessage(msg);
                   }}
                 />
-
-                <FontAwesome
-                  name="microphone"
-                  size={28}
-                  color={theme.icons_color}
-                  className="mx-3"
-                />
-              </View>
-            )}
-            {/* Input section */}
-            <TouchableWithoutFeedback onPress={dismissKeyboard}>
-              <Animated.View
-                className="mx-3 h-12 flex-1 rounded-full bg-white"
-                style={[
-                  {
-                    width: animatedWidth.interpolate({
-                      inputRange: [0, 100],
-                      outputRange: ["0%", "100%"], // Convert animated value to percentage
-                    }),
-                  },
-                ]}
-              >
-                <TextInput
-                  className="h-full w-full px-3 text-xl"
-                  placeholder="Aa"
-                  onFocus={() => setInputFocus(true)}
-                  onBlur={() => setInputFocus(false)}
-                  onChangeText={(text) => {
-                    setMsg(text);
-                    setInputFocus(true);
+              ) : (
+                <Text
+                  className="text-3xl"
+                  onPress={() => {
+                    sendMessage(theme.emoji, "emoji");
                   }}
-                  onPress={() => setInputFocus(true)}
-                  value={msg.length > 0 ? msg : ""}
-                />
-              </Animated.View>
-            </TouchableWithoutFeedback>
-            {msg.length > 0 ? (
-              <Ionicons
-                name="send"
-                className=""
-                size={26}
-                color={theme.icons_color}
-                onPress={() => {
-                  sendMessage(msg);
-                }}
-              />
-            ) : (
-              <Text
-                className="text-3xl"
-                onPress={() => {
-                  sendMessage(theme.emoji, "emoji");
-                }}
-              >
-                {theme.emoji}
-              </Text>
-            )}
-          </View>
+                >
+                  {theme.emoji}
+                </Text>
+              )}
+            </View>
+          )}
         </ImageBackground>
       </View>
     </KeyboardAvoidingView>
