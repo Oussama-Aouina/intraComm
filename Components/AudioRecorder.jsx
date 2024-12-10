@@ -98,7 +98,7 @@ export default function AudioRecorder({
         "File uploaded successfully. Public URL:",
         publicUrlData.publicUrl,
       );
-      return [publicUrlData.publicUrl, "audio"];
+      return publicUrlData.publicUrl;
     } catch (error) {
       console.error("Error uploading the file:", error);
       alert("Something went wrong while uploading the file.");
@@ -227,7 +227,7 @@ export default function AudioRecorder({
         onPress={async () => {
           if (recording) {
             await saveRecording().then((url) => {
-              sendMessage(url);
+              sendMessage(url, "audio");
               setRecordVisible(false);
             });
           } else {
