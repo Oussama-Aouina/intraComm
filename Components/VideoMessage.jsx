@@ -9,7 +9,7 @@ export default function VideoMessage({ source }) {
   const video = useRef(null);
   const [status, setStatus] = useState({});
   return (
-    <View className="mx-2 items-center rounded-lg">
+    <View className="mx-2 my-3 items-center rounded-lg">
       <Video
         ref={video}
         style={styles.video}

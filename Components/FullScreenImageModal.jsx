@@ -15,7 +15,6 @@ import { shareAsync } from "expo-sharing";
 import { Alert } from "react-native";
 
 const FullScreenImageModal = ({ visible, onClose, imageUri }) => {
-  console.log(imageUri);
   // download the media in the documents
   //   const downloadFromURL = async () => {
   //     const filename = imageUri.substring(imageUri.lastIndexOf("/") + 1);
