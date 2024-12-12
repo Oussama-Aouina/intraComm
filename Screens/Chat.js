@@ -1,6 +1,7 @@
 import React from "react";
 import firebase from "../config";
 import * as ImagePicker from "expo-image-picker";
+import * as DocumentPicker from "expo-document-picker";
 import * as FileSystem from "expo-file-system";
 import { decode } from "base64-arraybuffer";
 import { supabase } from "../config";
@@ -21,13 +22,17 @@ import {
   TouchableWithoutFeedback,
   TouchableOpacity,
 } from "react-native";
-
 import { set } from "firebase/database";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
 import FontAwesome from "@expo/vector-icons/FontAwesome";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
-import { Message, AudioRecorder } from "../Components";
+import {
+  Message,
+  AudioRecorder,
+  TypingIndicator,
+  InfoSharingOptions,
+} from "../Components";
 
 const database = firebase.database();
 
@@ -69,14 +74,16 @@ export default function Chat(props) {
 
   // reglage des messages
   const [data, setData] = useState([]);
+  const [isTyping, setIsTyping] = useState(false); // Local typing state
+  const [otherTyping, setOtherTyping] = useState(false); // State to track the other user's
   // reference sur tout les discussions
   const ref_discussions = database.ref("Discussions");
   // id de la discussion
   const id = currentId > secondId ? currentId + secondId : secondId + currentId;
   //reference de la discussion courante
   const ref_une_discussion = ref_discussions.child(id);
-  // recuperation de theme á partir de la discussion
 
+  // recuperation des message theme á partir de la discussion
   useEffect(() => {
     ref_une_discussion.on("value", (snapshot) => {
       let d = [];
@@ -85,17 +92,40 @@ export default function Chat(props) {
         if (msg.key === "theme") {
           // If the key is 'theme', retrieve its value
           setDiscussionTheme(msg.val());
-        } else if (msg.val().id != currentId) {
+        } else if (msg.key != "typing") {
           d.push(msg.val());
         }
       });
-      setData(d);
+      setData(d.reverse());
     });
 
     return () => {
       ref_une_discussion.off();
     };
   }, []);
+
+  // Watch the other user's typing status
+  useEffect(() => {
+    const typingRef = ref_une_discussion.child("typing").child(secondId);
+    typingRef.on("value", (snapshot) => {
+      setOtherTyping(snapshot.val()); // Update otherTyping state
+    });
+    return () => typingRef.off();
+  }, []);
+
+  // Update typing status in Firebase
+  const handleInputChange = (text) => {
+    setMsg(text);
+    setInputFocus(true);
+    const typingRef = ref_une_discussion.child("typing").child(currentId);
+    if (text.length > 0 && !isTyping) {
+      setIsTyping(true);
+      typingRef.set(true);
+    } else if (text.length === 0 && isTyping) {
+      setIsTyping(false);
+      typingRef.set(false);
+    }
+  };
 
   // le nom initiale du theme de discussion
   const [discussionTheme, setDiscussionTheme] = useState("default");
@@ -158,7 +188,9 @@ export default function Chat(props) {
     setInputFocus(false);
   };
 
-  // reglage de l'evoie des documents
+  // reglage de l'evoie des documents et des medias
+  const [media, setMedia] = useState(null);
+  const [file, setFile] = useState(null);
 
   const uploadImage = async () => {
     const permissionResult = await ImagePicker.requestCameraPermissionsAsync();
@@ -167,12 +199,11 @@ export default function Chat(props) {
       return;
     }
 
-    const pickerResult = await ImagePicker.launchCameraAsync({
+    let pickerResult = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [4, 3],
-      cameraType: ImagePicker.CameraType.front,
       quality: 1,
-      mediaTypes: ImagePicker.MediaTypeOptions.All,
     });
 
     if (pickerResult.cancelled === true) {
@@ -191,42 +222,95 @@ export default function Chat(props) {
     console.log("image type", uriImage.type);
     const contentType =
       pickerResult.assets[0].type === "image" ? "image/png" : "image/jpeg";
-
+    const docId = currentId + Date.now();
     await supabase.storage
-      .from("discussionsFiles")
-      .upload("image" + currentId, decode(base64), {
+      .from("discussionsMedias")
+      .upload(docId, decode(base64), {
         contentType,
       });
 
     const { data } = supabase.storage
-      .from("discussionsFiles")
-      .getPublicUrl("image" + currentId);
+      .from("discussionsMedias")
+      .getPublicUrl(docId);
     console.log("showdata" + data);
 
     return data.publicUrl;
   };
+  const hadleUploadImage = async () => {
+    const file = await uploadImage();
+    setMedia(file);
+    sendMessage(file, "image");
+  };
 
   const uploadFile = async () => {
-    const permissionResult =
-      await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (permissionResult.granted === false) {
-      alert("Permission to access camera roll is required!");
-      return;
+    try {
+      // Request permission to access the document picker
+      const pickerResult = await DocumentPicker.getDocumentAsync({
+        type: ["application/pdf", "text/plain"], // Allow only PDF and text files
+      });
+
+      console.log("Picker Result:", pickerResult);
+
+      // Check if the user canceled the picker
+      if (pickerResult.type === "cancel") {
+        return;
+      }
+
+      const uriFile = pickerResult.assets[0].uri;
+      console.log("URI File:", uriFile);
+
+      // Copy the file to the app's cache directory
+      const fileName = pickerResult.assets[0].name;
+      const cachePath = `${FileSystem.cacheDirectory}${fileName}`;
+
+      await FileSystem.copyAsync({
+        from: uriFile,
+        to: cachePath,
+      });
+
+      console.log("Cache Path:", cachePath);
+
+      // Read the file as a base64 string
+      const base64 = await FileSystem.readAsStringAsync(cachePath, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+
+      // Determine the content type
+      const contentType = pickerResult.assets[0].mimeType || "application/pdf";
+
+      console.log("Content Type:", contentType);
+
+      const docId = currentId + Date.now(); // Ensure currentId is defined in your context
+
+      // Upload the file to Supabase storage
+      const { error } = await supabase.storage
+        .from("discussionsFiles")
+        .upload(docId, decode(base64), {
+          contentType,
+        });
+
+      if (error) {
+        throw new Error(`Supabase upload failed: ${error.message}`);
+      }
+
+      // Get the public URL of the uploaded file
+      const { data } = supabase.storage
+        .from("discussionsFiles")
+        .getPublicUrl(docId);
+
+      console.log("Uploaded file URL:", data.publicUrl);
+
+      return data.publicUrl;
+    } catch (error) {
+      console.error("Error uploading the file:", error);
+      alert("Something went wrong while uploading the file.");
+      return null;
     }
-    const pickerResult = await ImagePicker.launchDocumentLibraryAsync();
-    if (pickerResult.cancelled === true) {
-      return;
-    }
-    const response = await fetch(pickerResult.uri);
-    const blob = await response.blob();
-    const ref = firebase
-      .storage()
-      .ref()
-      .child("files/" + currentId);
-    ref.put(blob).then((snapshot) => {
-      console.log("Uploaded a blob or file!", snapshot);
-    });
-    return ref.getDownloadURL();
+  };
+  const handleUploadFile = async () => {
+    const file = await uploadFile();
+    setMedia(file);
+    sendMessage(media, "file");
   };
 
   const takePhoto = async () => {
@@ -295,15 +379,17 @@ export default function Chat(props) {
       return null;
     }
   };
-  const [photo, setPhoto] = useState(null);
+
   const hadleTakePhoto = async () => {
-    const [photo, type] = await takePhoto();
-    setPhoto(photo);
-
-    sendMessage(photo, type);
+    const [media, type] = await takePhoto();
+    setMedia(media);
+    sendMessage(media, type);
   };
-
+  //voice recorder
   const [recorderVisible, setRecorderVisible] = useState(false);
+
+  // informations to share (image,file,location)
+  const [shareVisible, setShareVisible] = useState(false);
 
   return (
     //sectionList tnajem tafichilek 7asb parametre enti 3inek bih (exemple : par jour)
@@ -374,7 +460,8 @@ export default function Chat(props) {
             keyExtractor={(item, index) => item.id || index.toString()}
             keyboardShouldPersistTaps="handled"
             onContentSizeChange={() =>
-              flatListRef.current?.scrollToEnd({ animated: true })
+              // flatListRef.current?.scrollToEnd({ animated: true })
+              flatListRef.current?.scrollToOffset({ offset: 0, animated: true })
             }
             renderItem={(item) => {
               const isCurrentUser = item.item.sender === currentId;
@@ -386,8 +473,23 @@ export default function Chat(props) {
                 />
               );
             }}
+            inverted
           />
+          {/* Typing indicator */}
+          {otherTyping ? <TypingIndicator theme={theme} /> : null}
           {/* Files inputs */}
+          {
+            <InfoSharingOptions
+              visible={shareVisible}
+              onClose={() => {
+                setShareVisible(false);
+              }}
+              theme={theme}
+              handleUploadImage={hadleUploadImage}
+              handleUploadFile={handleUploadFile}
+              sendMessage={sendMessage}
+            />
+          }
 
           {recorderVisible ? (
             <AudioRecorder
@@ -415,14 +517,34 @@ export default function Chat(props) {
                     width: inputFocus ? "0%" : "auto",
                   }}
                 >
-                  <TouchableOpacity>
-                    <MaterialIcons
-                      name="add-circle"
-                      size={30}
-                      color={theme.icons_color}
-                      className="mr-3"
-                    />
-                  </TouchableOpacity>
+                  {shareVisible ? (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShareVisible(false);
+                      }}
+                    >
+                      <MaterialIcons
+                        name="cancel"
+                        size={30}
+                        color={theme.icons_color}
+                        className="mr-3"
+                      />
+                    </TouchableOpacity>
+                  ) : (
+                    <TouchableOpacity
+                      onPress={() => {
+                        setShareVisible(true);
+                      }}
+                    >
+                      <MaterialIcons
+                        name="add-circle"
+                        size={30}
+                        color={theme.icons_color}
+                        className="mr-3"
+                      />
+                    </TouchableOpacity>
+                  )}
+
                   <TouchableOpacity
                     onPress={() => {
                       hadleTakePhoto();
@@ -471,8 +593,7 @@ export default function Chat(props) {
                     onFocus={() => setInputFocus(true)}
                     onBlur={() => setInputFocus(false)}
                     onChangeText={(text) => {
-                      setMsg(text);
-                      setInputFocus(true);
+                      handleInputChange(text);
                     }}
                     onPress={() => setInputFocus(true)}
                     value={msg.length > 0 ? msg : ""}
