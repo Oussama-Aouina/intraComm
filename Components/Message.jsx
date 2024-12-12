@@ -1,11 +1,18 @@
 import React, { useState } from "react";
-import { View, Text, Image, TouchableHighlight } from "react-native";
+import {
+  View,
+  Text,
+  Image,
+  TouchableHighlight,
+  TouchableOpacity,
+} from "react-native";
 import VideoMessage from "./VideoMessage";
 import AudioMessage from "./AudioMessage";
 import { ImageBackground } from "react-native";
 import MaterialIcons from "@expo/vector-icons/MaterialIcons";
 import FullScreenImageModal from "./FullScreenImageModal";
 import { StyleSheet } from "react-native";
+import LocationMessage from "./LocationMessage";
 
 const Message = React.memo(({ item, isCurrentUser, theme }) => {
   // these parameters to open the image in full screen when clicking it
@@ -99,8 +106,8 @@ const Message = React.memo(({ item, isCurrentUser, theme }) => {
     case "image":
       return (
         <>
-          <TouchableHighlight
-            className="my-3 mb-2 w-full flex-row border-2 border-gray-200"
+          <View
+            className="my-3 mb-2 w-full flex-row"
             style={{
               justifyContent: isCurrentUser ? "flex-end" : "flex-start",
               marginTop: 10,
@@ -118,10 +125,12 @@ const Message = React.memo(({ item, isCurrentUser, theme }) => {
                 borderRadius: 15,
               }}
             >
-              <Image
-                source={{ uri: item.item.message }}
-                style={{ width: 150, height: 200, borderRadius: 15 }}
-              />
+              <TouchableOpacity onPress={handleImagePress}>
+                <Image
+                  source={{ uri: item.item.message }}
+                  style={{ width: 150, height: 200, borderRadius: 15 }}
+                />
+              </TouchableOpacity>
               <Text
                 style={{
                   fontSize: 10,
@@ -133,7 +142,7 @@ const Message = React.memo(({ item, isCurrentUser, theme }) => {
                 {item.item.time}
               </Text>
             </View>
-          </TouchableHighlight>
+          </View>
           <FullScreenImageModal
             visible={modalVisible}
             onClose={handleCloseModal}
@@ -194,6 +203,23 @@ const Message = React.memo(({ item, isCurrentUser, theme }) => {
             />
           </View>
         </View>
+      );
+    case "location":
+      return (
+        <TouchableOpacity
+          className="my-3 mb-2 w-full flex-row"
+          style={{
+            justifyContent: isCurrentUser ? "flex-end" : "flex-start",
+            marginVertical: 10,
+            paddingHorizontal: 10,
+          }}
+        >
+          <LocationMessage
+            location={item.item.message}
+            theme={theme}
+            isCurrentUser={isCurrentUser}
+          />
+        </TouchableOpacity>
       );
     default:
       return null; // or some fallback UI

@@ -10,8 +10,8 @@ import {
 
 function LocationMessage({ location, isCurrentUser, theme }) {
   const navigation = useNavigation();
-  const longitude = location.split("#")[0].split(" ")[1];
-  const latitude = location.split("#")[1].split(" ")[1];
+  const longitude = location.split("#")[1].split(" ")[1];
+  const latitude = location.split("#")[0].split(" ")[1];
   console.log("longitude: " + longitude + " latitude: " + latitude);
   return (
     <TouchableOpacity
