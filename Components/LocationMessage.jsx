@@ -21,6 +21,7 @@ function LocationMessage({ location, isCurrentUser, theme }) {
         navigation.navigate("Map", {
           longitude: longitude,
           latitude: latitude,
+          theme: theme,
         });
       }}
     >
@@ -61,7 +62,7 @@ function LocationMessage({ location, isCurrentUser, theme }) {
               marginBottom: 5,
             }}
           >
-            Long: {longitude}
+            Long: {longitude.substring(0, 11)}
           </Text>
           <Text
             className="text-xs font-light tracking-wide"
@@ -73,7 +74,7 @@ function LocationMessage({ location, isCurrentUser, theme }) {
               marginBottom: 5,
             }}
           >
-            Lat: {latitude}
+            Lat: {latitude.substring(0, 11)}
           </Text>
         </View>
       </View>
