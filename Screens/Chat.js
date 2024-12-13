@@ -93,7 +93,7 @@ export default function Chat(props) {
           // If the key is 'theme', retrieve its value
           setDiscussionTheme(msg.val());
         } else if (msg.key != "typing") {
-          d.push(msg.val());
+          d.push({ id: msg.key, ...msg.val() });
         }
       });
       setData(d.reverse());
@@ -174,6 +174,10 @@ export default function Chat(props) {
       sender: currentId,
       receiver: secondId,
       type: typeMsg !== undefined ? typeMsg : "text",
+      seen: {
+        status: false,
+        time: null,
+      },
     };
     console.log("Message Data:", messageData);
 
@@ -182,10 +186,32 @@ export default function Chat(props) {
     });
     setMsg("");
   };
+  // faire vu au dernier message
+  useEffect(() => {
+    if (!data.length) return;
+
+    const lastMessage = data[0];
+    console.log("last message", lastMessage);
+    if (lastMessage.receiver === currentId && !lastMessage.seen?.status) {
+      const messageRef = ref_une_discussion.child(lastMessage.id);
+      messageRef.update({
+        seen: {
+          status: true,
+          time: new Date().toISOString(),
+        },
+      });
+    }
+  }, [data]);
+
   // pour le bon display de clavier sur ios
   const dismissKeyboard = () => {
     Keyboard.dismiss();
     setInputFocus(false);
+    if (isTyping) {
+      const typingRef = ref_une_discussion.child("typing").child(currentId);
+      typingRef.set(false);
+      setIsTyping(false);
+    }
   };
 
   // reglage de l'evoie des documents et des medias
@@ -475,6 +501,33 @@ export default function Chat(props) {
             }}
             inverted
           />
+          {data.length > 0 &&
+            data[0].sender === currentId &&
+            data[0].seen?.status && (
+              <View className="flex flex-row justify-end pr-2">
+                <View className="flex flex-row items-center justify-start">
+                  <AntDesign
+                    name="check"
+                    size={12}
+                    color={theme.sender_message_background_color}
+                  />
+                  {/* <AntDesign
+                    name="check"
+                    size={10}
+                    color={theme.sender_message_background_color}
+                  /> */}
+                </View>
+
+                <Text
+                  className="justify-end text-right text-xs"
+                  style={{
+                    color: theme.sender_message_background_color,
+                  }}
+                >
+                  Seen at {new Date(data[0].seen?.time).toLocaleTimeString()}
+                </Text>
+              </View>
+            )}
           {/* Typing indicator */}
           {otherTyping ? <TypingIndicator theme={theme} /> : null}
           {/* Files inputs */}
