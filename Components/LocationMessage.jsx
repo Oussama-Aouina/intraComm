@@ -12,7 +12,7 @@ function LocationMessage({ location, isCurrentUser, theme }) {
   const navigation = useNavigation();
   const longitude = location.split("#")[1].split(" ")[1];
   const latitude = location.split("#")[0].split(" ")[1];
-  console.log("longitude: " + longitude + " latitude: " + latitude);
+
   return (
     <TouchableOpacity
       className="felx flex-col items-center"
@@ -42,8 +42,8 @@ function LocationMessage({ location, isCurrentUser, theme }) {
         <Text
           style={{
             color: isCurrentUser
-              ? theme.sender_message_color
-              : theme.receiver_message_color,
+              ? theme.sender_message_text_color
+              : theme.receiver_message_text_color,
             textAlign: isCurrentUser ? "right" : "left",
             marginTop: 5,
           }}
@@ -56,25 +56,25 @@ function LocationMessage({ location, isCurrentUser, theme }) {
             className="text-xs font-light tracking-wide"
             style={{
               color: isCurrentUser
-                ? theme.sender_message_color
-                : theme.receiver_message_color,
+                ? theme.sender_message_text_color
+                : theme.receiver_message_text_color,
               textAlign: isCurrentUser ? "right" : "left",
               marginBottom: 5,
             }}
           >
-            Long: {longitude.substring(0, 11)}
+            Long: {longitude.substring(0, 6)}
           </Text>
           <Text
             className="text-xs font-light tracking-wide"
             style={{
               color: isCurrentUser
-                ? theme.sender_message_color
-                : theme.receiver_message_color,
+                ? theme.sender_message_text_color
+                : theme.receiver_message_text_color,
               textAlign: isCurrentUser ? "right" : "left",
               marginBottom: 5,
             }}
           >
-            Lat: {latitude.substring(0, 11)}
+            Lat: {latitude.substring(0, 6)}
           </Text>
         </View>
       </View>
