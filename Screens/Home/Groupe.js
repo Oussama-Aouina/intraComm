@@ -72,16 +72,19 @@ export default function Group(props) {
 
   const backgroundColor = colorScheme.get() == "light" ? "#ffff" : "#2B2B2B";
 
-  // useEffect(() => {
-  //   // Filter the data based on the search input
-  //   const filtered = data.filter(
-  //     (group) =>
-  //       group.nom.toLowerCase().includes(search.toLowerCase()) ||
-  //       group.pseudo.toLowerCase().includes(search.toLowerCase()),
-  //   );
-  //   setFilteredData(filtered);
-  // }, [search, data]);
-
+  useEffect(() => {
+    // Filter the data based on the search input
+    const filtered = data.filter(
+      (group) =>
+        // console.log("group", group) ||
+        group &&
+        group.nom &&
+        group.nom.toLowerCase().includes(search.toLowerCase()),
+      // group.nom.includes(search),
+    );
+    setFilteredData(filtered);
+  }, [search, data]);
+  console.log("data", data);
   return (
     // <ImageBackground
     //   source={require("../../assets/imgbleu.jpg")}
@@ -114,7 +117,7 @@ export default function Group(props) {
       </View>
 
       <FlatList
-        data={data}
+        data={filteredData}
         renderItem={({ item }) => {
           return (
             <TouchableOpacity
@@ -144,13 +147,13 @@ export default function Group(props) {
         currentId={currentId}
       />
 
-      <TouchableOpacity
+      {/* <TouchableOpacity
         className="flex h-8 w-full items-center justify-center rounded-t-full bg-greenBlue-400"
         onPress={() => {
           toggleColorScheme();
           setThemeColor((prev) => (prev === "light" ? "dark" : "light"));
         }}
-      ></TouchableOpacity>
+      ></TouchableOpacity> */}
     </View>
     // </ImageBackground>
   );
