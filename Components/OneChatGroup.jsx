@@ -129,10 +129,10 @@ function OneChatGroup(props) {
   return (
     <View className="flex min-h-12 w-full flex-row items-center justify-between border-b border-gray-300 py-3 dark:border-gray-500">
       <View className="flex flex-row items-start">
-        {/* <Image
-          source={{ uri: props.item.item.linkImage }}
+        <Image
+          source={{ uri: props.item.linkImage }}
           className="h-14 w-14 rounded-full border-2 border-greenBlue-300"
-        ></Image> */}
+        ></Image>
         <View className="ml-3 flex flex-col">
           <Text
             className="text-xl dark:text-white"
@@ -170,7 +170,7 @@ function OneChatGroup(props) {
                     case "file":
                       return "📄 File: ";
                     default:
-                      return "Say Hello! 👋🏻 to your new friend";
+                      return "Say Hello! 👋🏻 to the goup";
                   }
                 })()}
                 {lastMessage?.message && lastMessage?.message.length > 20

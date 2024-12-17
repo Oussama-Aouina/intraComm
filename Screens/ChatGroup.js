@@ -492,11 +492,14 @@ export default function ChatGroup(props) {
                 color={theme.icons_color}
               />
             </TouchableOpacity>
-            <TouchableOpacity onPress={handleImagePress}>
-              {/* <Image
-                source={{ uri: secondProfile.linkImage }}
+            <TouchableOpacity
+              onPress={handleImagePress}
+              className="flex flex-row items-center"
+            >
+              <Image
+                source={{ uri: group.linkImage }}
                 className="h-12 w-12 rounded-full"
-              /> */}
+              />
               <Text
                 className="ml-2 text-xl font-bold"
                 style={{
@@ -734,7 +737,7 @@ export default function ChatGroup(props) {
             visible={modalVisible}
             onClose={handleCloseModal}
             discussionId={id}
-            // image={secondProfile.linkImage}
+            image={group.linkImage}
             name={group.nom}
             discussionTheme={discussionTheme}
           />
