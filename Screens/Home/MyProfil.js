@@ -36,6 +36,7 @@ export default function MyProfil(props) {
       currentId={currentId}
       isDark={props.route.params.isDark}
       setIsDark={props.route.params.setIsDark}
+      navigation={props.navigation}
     />
   );
 }

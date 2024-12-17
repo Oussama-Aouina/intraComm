@@ -7,6 +7,7 @@ import {
   TextInput,
   StatusBar,
   TouchableOpacity,
+  Appearance,
 } from "react-native";
 import Animated, {
   BounceInUp,
@@ -14,7 +15,12 @@ import Animated, {
   SlideInRight,
   BounceInDown,
   Easing,
+  FadeInLeft,
+  FadeInRight,
+  FadeInUp,
+  FadeInDown,
 } from "react-native-reanimated";
+import { colorScheme, useColorScheme } from "nativewind";
 import firebase from "../config";
 
 const auth = firebase.auth();
@@ -51,7 +57,7 @@ export default function NewUser(props) {
       .createUserWithEmailAndPassword(email, pwd)
       .then(() => {
         const currentId = auth.currentUser.uid;
-        props.navigation.navigate("Home", { currentId: currentId });
+        props.navigation.navigate("CompleteProfile", { currentId: currentId });
       })
       .catch((error) => alert(error.message));
   };
@@ -63,10 +69,17 @@ export default function NewUser(props) {
       {/* Animated Logo Section */}
       <View className="flex h-40 flex-row items-center justify-center">
         <Animated.Image
-          entering={SlideInLeft.duration(1000).easing(
+          entering={FadeInUp.duration(1000).easing(
             Easing.inOut(Easing.back(4)),
           )}
           className="absolute left-0 h-20 w-24"
+          source={require("../assets/logos/logo_single_part.png")}
+        />
+        <Animated.Image
+          entering={FadeInUp.duration(1000).easing(
+            Easing.inOut(Easing.back(4)),
+          )}
+          className="absolute right-0 h-20 w-24"
           source={require("../assets/logos/logo_single_part.png")}
         />
         <Animated.Image
@@ -74,19 +87,12 @@ export default function NewUser(props) {
           className="absolute z-10 h-32 w-40"
           source={require("../assets/logos/logo_single_part.png")}
         />
-        <Animated.Image
-          entering={SlideInRight.duration(1000).easing(
-            Easing.inOut(Easing.back(4)),
-          )}
-          className="absolute right-0 h-20 w-24"
-          source={require("../assets/logos/logo_single_part.png")}
-        />
       </View>
 
       {/* Title */}
       <View className="flex flex-row items-center">
         <Animated.Text
-          entering={SlideInLeft.duration(1000).easing(
+          entering={FadeInLeft.duration(1000).easing(
             Easing.inOut(Easing.back(4)),
           )}
           className="text-3xl font-bold tracking-wider text-slate-100"
@@ -94,7 +100,7 @@ export default function NewUser(props) {
           Intra
         </Animated.Text>
         <Animated.Text
-          entering={SlideInRight.duration(1000).easing(
+          entering={FadeInRight.duration(1000).easing(
             Easing.inOut(Easing.back(4)),
           )}
           className="text-3xl font-bold tracking-wider text-greenBlue-300"
@@ -105,10 +111,10 @@ export default function NewUser(props) {
 
       {/* Sign Up Form */}
       <Animated.View
-        entering={BounceInDown.delay(400).duration(1000)}
+        entering={FadeInDown.delay(400).duration(1000).springify()}
         className="flex flex-1 items-center justify-end"
       >
-        <View className="h-[80%] w-full rounded-t-3xl bg-white bg-opacity-30 px-8 shadow-lg">
+        <View className="h-[80%] w-full rounded-t-3xl bg-white bg-opacity-30 px-8 shadow-lg dark:bg-dark-500">
           <Text className="mt-5 py-3 text-center text-5xl font-bold text-greenBlue-300">
             Sign Up
           </Text>
@@ -119,7 +125,7 @@ export default function NewUser(props) {
             onChangeText={(txt) => {
               email = txt;
             }}
-            className="my-2 min-w-full rounded-lg bg-gray-200 py-3 pl-4 text-lg"
+            className="my-2 w-full min-w-full rounded-lg border-greenBlue-300 bg-gray-200 py-3 pl-4 text-lg dark:bg-dark-200 dark:text-gray-300 dark:placeholder:text-gray-400"
           />
           <TextInput
             secureTextEntry
@@ -127,7 +133,7 @@ export default function NewUser(props) {
             onChangeText={(txt) => {
               pwd = txt;
             }}
-            className="my-2 min-w-full rounded-lg bg-gray-200 py-3 pl-4 text-lg"
+            className="my-2 w-full min-w-full rounded-lg border-greenBlue-300 bg-gray-200 py-3 pl-4 text-lg dark:bg-dark-200 dark:text-gray-300 dark:placeholder:text-gray-400"
           />
           <TextInput
             secureTextEntry
@@ -135,7 +141,7 @@ export default function NewUser(props) {
             onChangeText={(txt) => {
               confirmPwd = txt;
             }}
-            className="my-2 min-w-full rounded-lg bg-gray-200 py-3 pl-4 text-lg"
+            className="my-2 w-full min-w-full rounded-lg border-greenBlue-300 bg-gray-200 py-3 pl-4 text-lg dark:bg-dark-200 dark:text-gray-300 dark:placeholder:text-gray-400"
           />
           <TouchableOpacity className="min-w-full" onPress={handleSubmit}>
             <Text className="w-full rounded-xl bg-greenBlue-300 py-4 text-center text-xl font-bold text-slate-100">
@@ -143,7 +149,7 @@ export default function NewUser(props) {
             </Text>
           </TouchableOpacity>
           <View className="mt-3 flex flex-row items-center justify-center">
-            <Text className="text-lg font-normal text-dark-500">
+            <Text className="text-lg font-normal text-dark-500 dark:text-gray-400">
               Already have an account?
             </Text>
             <TouchableOpacity onPress={() => props.navigation.replace("Auth")}>
