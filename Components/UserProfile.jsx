@@ -9,6 +9,7 @@ import {
   Image,
   Switch,
   ActivityIndicator,
+  StatusBar,
 } from "react-native";
 import { AntDesign } from "react-native-vector-icons";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -22,6 +23,7 @@ import { supabase } from "../config";
 import firebase from "../config";
 // import Loading from "./Loading";
 
+const auth = firebase.auth();
 export default function UserProfile({
   navigation,
   onDeleteAccount,
@@ -31,7 +33,7 @@ export default function UserProfile({
 }) {
   const database = firebase.database();
   const auth = firebase.auth();
-  const email = "o@g.co";
+  const email = auth.currentUser?.email || "o@g.com";
 
   const [nom, setNom] = useState();
   const [pseudo, setPseudo] = useState();
@@ -46,7 +48,7 @@ export default function UserProfile({
       mediaTypes: ImagePicker.MediaTypeOptions.All,
       allowsEditing: true,
       aspect: [4, 3],
-      quality: 1,
+      quality: 0.5,
     });
 
     console.log(result);
@@ -65,7 +67,7 @@ export default function UserProfile({
     const base64 = await FileSystem.readAsStringAsync(uriImage, {
       encoding: FileSystem.EncodingType.Base64,
     });
-    const contentType = uriImage.type === "image/png";
+    const contentType = "image/png";
     const imageId = currentId + Date.now();
     await supabase.storage
       .from("profileImages")
@@ -140,7 +142,7 @@ export default function UserProfile({
   const onLogout = async () => {
     try {
       await auth.signOut();
-      navigation.navigate("Login");
+      navigation.replace("Auth");
     } catch (error) {
       console.error("Error signing out: ", error);
     }
@@ -164,6 +166,7 @@ export default function UserProfile({
 
   return (
     <View className="h-full w-full bg-gray-100 px-5 pt-10 dark:bg-dark-500">
+      <StatusBar barStyle={isEnabled ? "light-content" : "dark-content"} />
       {/* Header section */}
       <View className="my-2 flex w-full flex-row items-center justify-between">
         <TouchableOpacity className="" onPress={cancelChanges}>

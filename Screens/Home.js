@@ -16,8 +16,11 @@ const Tab = createMaterialBottomTabNavigator();
 export default function Home(props) {
   const currentId =
     props.route.initialParams?.currentId ||
-    props.route.params?.currentId ||
+    props.route?.params?.currentId ||
+    props.currentId ||
     firebase.auth().currentUser?.uid;
+
+  console.log("currentId from Home", currentId);
 
   // const iconsColor = colorScheme.get() == "light" ? "#000" : "#fff";
   const [isDark, setIsDark] = useState(colorScheme.get() === "dark");
@@ -54,6 +57,7 @@ export default function Home(props) {
       <Tab.Screen
         name="Groups"
         component={Groupe}
+        initialParams={{ currentId: currentId }}
         options={{
           tabBarLabel: "Groups",
           tabBarIcon: ({ color }) => (
