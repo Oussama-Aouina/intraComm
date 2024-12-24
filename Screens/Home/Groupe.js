@@ -54,21 +54,91 @@ export default function Group(props) {
   }, []);
 
   //recuperation des groupes
+  // useEffect(() => {
+  //   ref_table_groupes.on("value", (snapshot) => {
+  //     const d = [];
+  //     snapshot.forEach((element) => {
+  //       if (
+  //         (element.val().members &&
+  //           element.val().members.includes(currentId)) ||
+  //         element.val().admin == currentId
+  //       ) {
+  //         d.push(element.val());
+  //       }
+  //       // console.log("element id", element.val().id);
+  //     });
+  //     setdata(d);
+  //   });
+
+  //   return () => {
+  //     ref_table_groupes.off();
+  //   };
+  // }, []);
+  // console.log("data", data);
   useEffect(() => {
-    ref_table_groupes.on("value", (snapshot) => {
-      const d = [];
-      snapshot.forEach((element) => {
-        d.push(element.val());
-        // console.log("element id", element.val().id);
-      });
-      setdata(d);
-    });
+    const groupsRef = database.ref("TableGroups");
+    const discussionsRef = database.ref("Discussions");
+
+    const fetchGroupsWithLastInteraction = async () => {
+      try {
+        const snapshot = await groupsRef.once("value");
+        const groups = [];
+        const fetchPromises = [];
+
+        snapshot.forEach((group) => {
+          const groupData = group.val();
+
+          // Check if the current user is an admin or a member of the group
+          if (
+            (groupData.members && groupData.members.includes(currentId)) ||
+            groupData.admin === currentId
+          ) {
+            const groupId = groupData.id;
+
+            const discussionPromise = discussionsRef
+              .child(groupId)
+              .child("last_interaction")
+              .once("value")
+              .then((discussionSnapshot) => ({
+                ...groupData,
+                lastInteraction: discussionSnapshot.val() || 0, // Default to 0 if not found
+              }));
+
+            fetchPromises.push(discussionPromise);
+          }
+        });
+
+        const groupsWithInteractions = await Promise.all(fetchPromises);
+
+        // Sort groups by 'last interaction' timestamp
+        groupsWithInteractions.sort((a, b) => {
+          const dateA = new Date(a.lastInteraction);
+          const dateB = new Date(b.lastInteraction);
+          return dateB - dateA; // Descending order
+        });
+
+        setdata(groupsWithInteractions);
+      } catch (error) {
+        console.error("Error fetching groups or discussions:", error);
+      }
+    };
+
+    // Listen for changes in both groups and discussions
+    const groupsListener = groupsRef.on(
+      "value",
+      fetchGroupsWithLastInteraction,
+    );
+
+    const discussionsListener = discussionsRef.on(
+      "child_changed",
+      fetchGroupsWithLastInteraction,
+    );
 
     return () => {
-      ref_table_groupes.off();
+      groupsRef.off("value", groupsListener);
+      discussionsRef.off("child_changed", discussionsListener);
     };
-  }, []);
-  // console.log("data", data);
+  }, [currentId]);
 
   const backgroundColor = colorScheme.get() == "light" ? "#ffff" : "#2B2B2B";
 

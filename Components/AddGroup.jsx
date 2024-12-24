@@ -10,6 +10,7 @@ import {
   ImageBackground,
   KeyboardAvoidingView,
   Platform,
+  ScrollView,
   TouchableWithoutFeedback,
 } from "react-native";
 import { AntDesign } from "@expo/vector-icons";
@@ -242,16 +243,21 @@ function AddGroup({ visible, onClose, currentId }) {
             <Text className="mb-2 text-lg font-bold text-gray-800 dark:text-white">
               Profiles
             </Text>
-            <FlatList
-              data={filteredProfiles}
-              renderItem={Item}
-              keyExtractor={(item) => item.id}
-              //   numColumns={3}
-              //   columnWrapperStyle={{
-              //     justifyContent: "space-between",
-              //     marginBottom: 10,
-              //   }}
-            />
+            <ScrollView
+              className="h-[40%] w-full"
+              showsVerticalScrollIndicator={true}
+            >
+              <FlatList
+                data={filteredProfiles}
+                renderItem={Item}
+                keyExtractor={(item) => item.id}
+                //   numColumns={3}
+                //   columnWrapperStyle={{
+                //     justifyContent: "space-between",
+                //     marginBottom: 10,
+                //   }}
+              />
+            </ScrollView>
           </View>
         </View>
       </View>

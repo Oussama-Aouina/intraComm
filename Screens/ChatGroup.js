@@ -194,9 +194,10 @@ export default function ChatGroup(props) {
     const ref_une_discussion = ref_discussions.child(idGroup);
     const key = ref_une_discussion.push().key;
     const ref_un_message = ref_une_discussion.child(key);
+    const now = new Date();
     const messageData = {
       message: msg,
-      time: new Date().toLocaleString(),
+      time: now.toLocaleString(),
       sender: currentId,
       receiver: idGroup,
       type: typeMsg !== undefined ? typeMsg : "text",
@@ -207,9 +208,16 @@ export default function ChatGroup(props) {
     };
     console.log("Message Data:", messageData);
 
-    ref_un_message.set(messageData).catch((error) => {
-      console.error("Firebase Set Error:", error);
-    });
+    ref_un_message
+      .set(messageData)
+      .then(() => {
+        ref_une_discussion.update({
+          last_interaction: now.toISOString(), // ISO timestamp for sorting
+        });
+      })
+      .catch((error) => {
+        console.error("Firebase Set Error:", error);
+      });
     // ref_une_discussion.child("lastMessage").set(messageData);
     setMsg("");
     const typingRef = ref_une_discussion.child("typing").child(currentId);
