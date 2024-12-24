@@ -98,7 +98,7 @@ function PositionInMap(props) {
         provider={PROVIDER_GOOGLE}
         initialRegion={region}
         loadingEnabled={true}
-        showsUserLocation={true}
+        // showsUserLocation={true}
         // showsMyLocationButton={true}
         ref={mapRef}
       >
@@ -118,7 +118,7 @@ const styles = StyleSheet.create({
   },
   map: {
     width: "100%",
-    height: "100%",
+    height: "95%",
   },
 });
 
