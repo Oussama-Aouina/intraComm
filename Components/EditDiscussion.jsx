@@ -47,11 +47,11 @@ function EditDiscussion({
     setIsAbleToSave(selectedTheme !== discussionTheme);
   }, [selectedTheme, discussionTheme]);
 
-  console.log("EditDiscussion", {
-    selectedTheme,
-    discussionTheme,
-    isAbleToSave,
-  });
+  // console.log("EditDiscussion", {
+  //   selectedTheme,
+  //   discussionTheme,
+  //   isAbleToSave,
+  // });
   const Item = ({ item }) => {
     return (
       <TouchableOpacity onPress={() => setSelectedTheme(item.id)}>
