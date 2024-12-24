@@ -19,7 +19,7 @@ const database = firebase.database();
 function formatMessageTime(dateString) {
   // Parse the date string manually
   const [datePart, timePart] = dateString.split(", ");
-  const [day, month, year] = datePart.split("/").map(Number);
+  const [month, day, year] = datePart.split("/").map(Number);
   //   console.log("day: ", day, "month: ", month, " year: ", year); // Debugging log
   const [hours, minutes, seconds] = timePart.split(":").map(Number);
 
@@ -61,6 +61,7 @@ function OneChatComponent(props) {
       : props.secondId + props.currentId;
   const ref_la_discussion = database.ref("Discussions").child(id);
 
+  // Check how many unread messages and the last message
   useEffect(() => {
     // Listener for the last 10 messages
     const listener = ref_la_discussion
@@ -72,7 +73,12 @@ function OneChatComponent(props) {
 
         // Iterate over each message in the snapshot
         snapshot.forEach((element) => {
-          if (element.key !== "nicknames" && element.key !== "typing") {
+          if (
+            element.key !== "nicknames" &&
+            element.key !== "typing" &&
+            element.key !== "theme" &&
+            element.key !== "last_interaction"
+          ) {
             const message = element.val();
             messages.push(message);
 
@@ -95,6 +101,7 @@ function OneChatComponent(props) {
         setUnreadMessages(unreadCount);
         if (lastMessage) {
           setLastMessage(lastMessage); // Save the last message text
+          console.log("Last message: ", lastMessage);
           //   console.log("Last message: ", formatMessageTime(lastMessage.time));
         }
       });
@@ -175,7 +182,7 @@ function OneChatComponent(props) {
                       return "Say Hello! 👋🏻 to your new friend";
                   }
                 })()}
-                {lastMessage?.message.length > 20
+                {lastMessage?.message && lastMessage?.message.length > 20
                   ? lastMessage?.message.substring(0, 20) + "..."
                   : lastMessage?.message}
                 {/* {!lastMessage?.message && "Say Hello! 👋🏻 to your new freind"} */}

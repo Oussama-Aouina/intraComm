@@ -206,7 +206,7 @@ const Message = React.memo(({ item, isCurrentUser, theme }) => {
       );
     case "location":
       return (
-        <TouchableOpacity
+        <View
           className="my-3 mb-2 w-full flex-row"
           style={{
             justifyContent: isCurrentUser ? "flex-end" : "flex-start",
@@ -219,7 +219,7 @@ const Message = React.memo(({ item, isCurrentUser, theme }) => {
             theme={theme}
             isCurrentUser={isCurrentUser}
           />
-        </TouchableOpacity>
+        </View>
       );
     default:
       return null; // or some fallback UI

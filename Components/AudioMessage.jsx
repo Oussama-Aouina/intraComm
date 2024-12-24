@@ -31,8 +31,9 @@ export default function AudioMessage({ source, theme, isCurrentUser }) {
       setSoundDuration(status.durationMillis);
 
       // Set up playback status listener
-      sound.setOnPlaybackStatusUpdate((status) => {
-        if (status.isLoaded) {
+      sound.setOnPlaybackStatusUpdate(
+        (status) => {
+          // if (status.isLoaded) {
           if (status.didJustFinish) {
             setIsPlaying(false);
             console.log("Finished Playing Sound");
@@ -52,8 +53,9 @@ export default function AudioMessage({ source, theme, isCurrentUser }) {
               useNativeDriver: false,
             }).start();
           }
-        }
-      });
+        },
+        // }
+      );
 
       setSound(sound);
       setIsPlaying(true);
@@ -147,7 +149,9 @@ export default function AudioMessage({ source, theme, isCurrentUser }) {
               inputRange: [0, 100],
               outputRange: ["0%", "100%"], // Convert animated value to percentage
             }),
-            backgroundColor: "black",
+            backgroundColor: isCurrentUser
+              ? theme.sender_message_text_color
+              : theme.receiver_message_text_color,
             borderRadius: 100,
             height: 10,
           }}

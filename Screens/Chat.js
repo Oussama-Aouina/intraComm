@@ -21,7 +21,9 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
   TouchableOpacity,
+  Linking,
 } from "react-native";
+import { FadeInUp, Easing } from "react-native-reanimated";
 import { set } from "firebase/database";
 import AntDesign from "@expo/vector-icons/AntDesign";
 import Ionicons from "@expo/vector-icons/Ionicons";
@@ -33,6 +35,7 @@ import {
   TypingIndicator,
   InfoSharingOptions,
 } from "../Components";
+import EditDiscussion from "../Components/EditDiscussion";
 
 const database = firebase.database();
 
@@ -82,7 +85,16 @@ export default function Chat(props) {
   const id = currentId > secondId ? currentId + secondId : secondId + currentId;
   //reference de la discussion courante
   const ref_une_discussion = ref_discussions.child(id);
-
+  // open the discussion settings
+  const [modalVisible, setModalVisible] = useState(false);
+  const handleCloseModal = () => {
+    setModalVisible(false);
+  };
+  const handleImagePress = () => {
+    setModalVisible(true);
+  };
+  // le nom initiale du theme de discussion
+  const [discussionTheme, setDiscussionTheme] = useState("spiderman");
   // recuperation des message theme á partir de la discussion
   useEffect(() => {
     ref_une_discussion.on("value", (snapshot) => {
@@ -92,7 +104,16 @@ export default function Chat(props) {
         if (msg.key === "theme") {
           // If the key is 'theme', retrieve its value
           setDiscussionTheme(msg.val());
-        } else if (msg.key != "typing") {
+        } else if (msg.key != "typing" && msg.key != "last_interaction") {
+          if (msg.val().sender !== currentId && !msg.val().seen?.status) {
+            const messageRef = ref_une_discussion.child(msg.key);
+            messageRef.update({
+              seen: {
+                status: true,
+                time: new Date().toISOString(),
+              },
+            });
+          }
           d.push({ id: msg.key, ...msg.val() });
         }
       });
@@ -119,16 +140,18 @@ export default function Chat(props) {
     setInputFocus(true);
     const typingRef = ref_une_discussion.child("typing").child(currentId);
     if (text.length > 0 && !isTyping) {
-      setIsTyping(true);
+      if (!isTyping) {
+        setIsTyping(true);
+      }
       typingRef.set(true);
     } else if (text.length === 0 && isTyping) {
-      setIsTyping(false);
+      if (isTyping) {
+        setIsTyping(false);
+      }
       typingRef.set(false);
     }
   };
 
-  // le nom initiale du theme de discussion
-  const [discussionTheme, setDiscussionTheme] = useState("default");
   //theme initale
   const [theme, setTheme] = useState({
     sides_background_color: "#0A3A40",
@@ -165,12 +188,14 @@ export default function Chat(props) {
       console.error("Invalid IDs provided:", { currentId, secondId });
       return;
     }
+    // ading last intraction propoerty to sort the discussions
+    const now = new Date();
     const ref_une_discussion = ref_discussions.child(id);
     const key = ref_une_discussion.push().key;
     const ref_un_message = ref_une_discussion.child(key);
     const messageData = {
       message: msg,
-      time: new Date().toLocaleString(),
+      time: now.toLocaleString(),
       sender: currentId,
       receiver: secondId,
       type: typeMsg !== undefined ? typeMsg : "text",
@@ -181,10 +206,23 @@ export default function Chat(props) {
     };
     console.log("Message Data:", messageData);
 
-    ref_un_message.set(messageData).catch((error) => {
-      console.error("Firebase Set Error:", error);
-    });
+    ref_un_message
+      .set(messageData)
+      .then(() => {
+        ref_une_discussion.update({
+          last_interaction: now.toISOString(), // ISO timestamp for sorting
+        });
+      })
+      .catch((error) => {
+        console.error("Firebase Set Error:", error);
+      });
+    // ref_une_discussion.child("lastMessage").set(messageData);
     setMsg("");
+    const typingRef = ref_une_discussion.child("typing").child(currentId);
+    if (isTyping) {
+      typingRef.set(false);
+      setIsTyping(false);
+    }
   };
   // faire vu au dernier message
   useEffect(() => {
@@ -417,12 +455,26 @@ export default function Chat(props) {
   // informations to share (image,file,location)
   const [shareVisible, setShareVisible] = useState(false);
 
+  // Function to initiate a phone call
+  const handleCall = () => {
+    const url = `tel:${secondProfile.telephone}`;
+    console.log("Calling:", url);
+    Linking.openURL(url).catch((err) =>
+      alert("Unable to make a call. Check your phone settings."),
+    );
+  };
+
   return (
     //sectionList tnajem tafichilek 7asb parametre enti 3inek bih (exemple : par jour)
     <KeyboardAvoidingView
       behavior={Platform.OS === "ios" ? "padding" : "height"}
       style={{ flex: 1 }}
     >
+      {/* <ScrollView
+        style={{ flex: 1 }}
+        contentContainerStyle={{ flexGrow: 1 }}
+        keyboardShouldPersistTaps="handled"
+      > */}
       <View className="h-full w-full flex-col">
         <StatusBar
           barStyle={theme.barStyle ? "light-content" : "dark-content"}
@@ -451,12 +503,13 @@ export default function Chat(props) {
                 color={theme.icons_color}
               />
             </TouchableOpacity>
-            <Image
-              className="h-12 w-12 rounded-full"
-              source={{
-                uri: secondProfile.linkImage,
-              }}
-            />
+            <TouchableOpacity onPress={handleImagePress}>
+              <Image
+                source={{ uri: secondProfile.linkImage }}
+                className="h-12 w-12 rounded-full"
+              />
+            </TouchableOpacity>
+
             <Text
               className="ml-2 text-xl font-bold"
               style={{
@@ -465,7 +518,7 @@ export default function Chat(props) {
             >
               {secondProfile.nom} {secondProfile.pseudo}
             </Text>
-            <TouchableOpacity className="ml-auto">
+            <TouchableOpacity className="ml-auto" onPress={handleCall}>
               <FontAwesome name="phone" size={28} color={theme.icons_color} />
             </TouchableOpacity>
             <TouchableOpacity>
@@ -487,7 +540,10 @@ export default function Chat(props) {
             keyboardShouldPersistTaps="handled"
             onContentSizeChange={() =>
               // flatListRef.current?.scrollToEnd({ animated: true })
-              flatListRef.current?.scrollToOffset({ offset: 0, animated: true })
+              flatListRef.current?.scrollToOffset({
+                offset: 0,
+                animated: true,
+              })
             }
             renderItem={(item) => {
               const isCurrentUser = item.item.sender === currentId;
@@ -504,7 +560,12 @@ export default function Chat(props) {
           {data.length > 0 &&
             data[0].sender === currentId &&
             data[0].seen?.status && (
-              <View className="flex flex-row justify-end pr-2">
+              <Animated.View
+                entering={FadeInUp.duration(1000).easing(
+                  Easing.inOut(Easing.back(4)),
+                )}
+                className="flex flex-row justify-end pr-2"
+              >
                 <View className="flex flex-row items-center justify-start">
                   <AntDesign
                     name="check"
@@ -526,7 +587,7 @@ export default function Chat(props) {
                 >
                   Seen at {new Date(data[0].seen?.time).toLocaleTimeString()}
                 </Text>
-              </View>
+              </Animated.View>
             )}
           {/* Typing indicator */}
           {otherTyping ? <TypingIndicator theme={theme} /> : null}
@@ -675,8 +736,17 @@ export default function Chat(props) {
               )}
             </View>
           )}
+          <EditDiscussion
+            visible={modalVisible}
+            onClose={handleCloseModal}
+            discussionId={id}
+            image={secondProfile.linkImage}
+            name={secondProfile.nom}
+            discussionTheme={discussionTheme}
+          />
         </ImageBackground>
       </View>
+      {/* </ScrollView> */}
     </KeyboardAvoidingView>
   );
 }
