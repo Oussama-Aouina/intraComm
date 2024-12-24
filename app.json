@@ -14,9 +14,7 @@
     "ios": {
       "supportsTablet": true,
       "config": {
-        "googleMaps": {
-          "apiKey": "AIzaSyAThrRWgEn8G7_uQN6C9GCsDbOiYp7AaYo"
-        }
+        "googleMapsApiKey": "AIzaSyAThrRWgEn8G7_uQN6C9GCsDbOiYp7AaYo"
       }
     },
     "android": {
@@ -28,7 +26,9 @@
         "googleMaps": {
           "apiKey": "AIzaSyAThrRWgEn8G7_uQN6C9GCsDbOiYp7AaYo"
         }
-      }
+      },
+      "permissions": ["android.permission.RECORD_AUDIO"],
+      "package": "com.oussama.myapp"
     },
     "web": {
       "favicon": "./assets/favicon.png"
@@ -40,7 +40,6 @@
           "photosPermission": "The app accesses your photos to let you share them with your friends."
         }
       ],
-
       [
         "expo-video",
         {

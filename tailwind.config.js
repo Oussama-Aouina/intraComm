@@ -1,7 +1,13 @@
 /** @type {import('tailwindcss').Config} */
 module.exports = {
   // darkMode: "selector",
-  content: ["./App.{js,ts,jsx,tsx}", "./Screens/**/*.{js,jsx,ts,tsx}"],
+  content: [
+    "./App.{js,ts,jsx,tsx}",
+    "./Screens/**/*.{js,jsx,ts,tsx}",
+    "./Components/**/*.{js,jsx,ts,tsx}",
+    "./Hooks/**/*.{js,jsx,ts,tsx}",
+    "./Screens/Home/**/*.{js,jsx,ts,tsx}",
+  ],
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
