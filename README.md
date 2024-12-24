@@ -35,11 +35,23 @@ IntraComm is a modern communication app inspired by Messenger. It provides users
    ```bash
    git clone https://github.com/your-username/intracomm.git
    cd intracomm
-  ```
+  bash
 2. **Install Dependencies**:
-```bash
-npm install
-```
-
+  bash
+   git clone https://github.com/your-username/intracomm.git
+   cd intracomm
+  bash
+3. **Set Up Firebase:**
+	•	Create a Firebase project at Firebase Console.
+	•	Enable Firestore and Authentication.
+	•	Copy your Firebase config and replace the placeholders in firebaseConfig.js.
+	4.	**Set Up Supabase:**
+	•	Create a Supabase project at Supabase.
+	•	Configure storage buckets for media uploads.
+	•	Replace the placeholders in supabaseConfig.js with your Supabase credentials.
+	5.	**Run the App:**
+bash
+expo start
+bash
 
 
