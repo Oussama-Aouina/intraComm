@@ -3,6 +3,13 @@
 IntraComm is a modern communication app inspired by Messenger. It provides users with a seamless experience for real-time discussions, file sharing, and personalization. Designed with React Native and Expo, it leverages Firebase for real-time database and authentication and Supabase for efficient file storage.
 
 ---
+## Some Screenshots
+
+<img width="356" alt="Screenshot 2025-03-01 at 11 08 08" src="https://github.com/user-attachments/assets/3c554034-8c00-4735-be83-ee8f8114440d" />
+<img width="356" alt="Screenshot 2025-03-01 at 11 08 18" src="https://github.com/user-attachments/assets/6ac9e21a-5828-474e-a7e5-35178be47ce4" />
+<img width="412" alt="Screenshot 2025-03-01 at 11 12 40" src="https://github.com/user-attachments/assets/54ca81b5-0533-431c-956d-00e40148ce0f" />
+<img width="356" alt="Screenshot 2025-03-01 at 11 08 40" src="https://github.com/user-attachments/assets/6cc1d838-82d9-4be6-8d93-6f61d566e380" />
+
 
 ## Features
 
